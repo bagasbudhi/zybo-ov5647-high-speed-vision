@@ -1,0 +1,17 @@
+build/
+vendor/
+.gen/
+.srcs/
+artifacts/*.log
+clockInfo.txt
+dfx_runtime.txt
+xsim.dir/
+xsim*.log
+xvlog*.log
+xelab*.log
+xelab*.pb
+xvlog*.pb
+xsim*.jou
+.Xil/
+__pycache__/
+*.pyc
