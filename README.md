@@ -1,10 +1,10 @@
 # Zybo Z7-10 high speed camera interface portfolio project
 
-**Status (7 October 2026):** The Z7-10 CSI-2 to custom RTL to DDR frame buffer to HDMI OUT hardware system was synthesized, routed, and built into a bitstream. Routed WNS is +0.843 ns; DRC reports no errors and 12 warnings. **Live OV5647-to-HDMI video is not yet demonstrated:** sensor clock/power control, sensor register setup, VDMA initialization software, and physical validation remain. The bitstream alone will not display camera video. The optional Python UDP viewer and synthetic sender pass protocol tests.
+**Status (20 October 2026):** The Z7-10 CSI-2 to custom RTL to DDR frame buffer to HDMI OUT hardware system was synthesized, routed, and built into a bitstream. Routed WNS is +0.843 ns; DRC reports no errors and 12 warnings. FPGA programming, PS DDR initialization, test-frame download, and VDMA readback now work on the connected board. **Live OV5647 video is not yet demonstrated:** the sensor did not acknowledge its first I2C chip-ID request, and camera power/clock details need identification. The MSI Bravo 15 C7VFK laptop has HDMI output only, so the HDMI test image needs an external monitor or USB HDMI capture device. Ethernet firmware remains unimplemented.
 
-Start with [the verified results](docs/test_results.md), [hardware inventory](docs/hardware_inventory.md), and [board bring-up steps](docs/bringup.md). The checked-in bitstream and Vitis handoff are `artifacts/zybo_camera_system.bit` and `artifacts/zybo_camera_system.xsa`; neither has been validated on physical hardware. The generated Vivado project is `build/system/zybo_camera_system.xpr`. `fpga/build_system.tcl` recreates the hardware design and bitstream; `fpga/export_xsa.tcl` recreates the XSA. The smaller `fpga/build.tcl` builds the isolated custom RTL and CSI IP for inspection and comparison.
+Start with [the verified results](docs/test_results.md), [the first physical bring-up log](docs/hardware_bringup_2026-10-20.md), and [board bring-up steps](docs/bringup.md). The checked-in bitstream and Vitis handoff are `artifacts/zybo_camera_system.bit` and `artifacts/zybo_camera_system.xsa`. FPGA programming, DDR test-frame download and VDMA readback were validated on the board; camera capture has not been validated. The generated Vivado project is `build/system/zybo_camera_system.xpr`. `fpga/build_system.tcl` recreates the hardware design and bitstream; `fpga/export_xsa.tcl` recreates the XSA. The smaller `fpga/build.tcl` builds the isolated custom RTL and CSI IP for inspection and comparison.
 
-Build a demonstrable path from the OV5647 two lane MIPI CSI-2 camera on a Zybo Z7-10 to the laptop's confirmed HDMI input. The FPGA fabric owns camera reception, frame accounting, a small real-time vision block, DDR frame buffering, and HDMI video output. The Zynq processor must configure the sensor and VDMA. Ethernet and the Python UDP viewer remain optional diagnostics.
+Build a demonstrable path from the OV5647 two lane MIPI CSI-2 camera on a Zybo Z7-10 to a display or laptop application. The FPGA fabric owns camera reception, frame accounting, a small real-time vision block, DDR frame buffering, and HDMI video output. The Zynq processor must configure the sensor and VDMA. Ethernet transport and the Python UDP viewer need additional board firmware.
 
 ## Why this project
 
@@ -14,12 +14,12 @@ The project demonstrates high speed serial reception, AXI4-Stream video, clock d
 
 ```text
 OV5647 module -- 15-pin ribbon / 2-lane CSI-2 --> Zybo Pcam port
-Zybo HDMI OUT -- HDMI cable --> laptop HDMI IN
+Zybo HDMI OUT -- HDMI cable --> external monitor or USB HDMI capture device --> laptop
 Zybo USB JTAG/UART -- USB --> laptop Vivado programming and logs
-Optional: Zybo Ethernet -- cable / LAN --> laptop Python receiver
+Zybo Ethernet -- cable / LAN --> laptop Python receiver (after board UDP firmware is built)
 ```
 
-Use the Zybo's **HDMI OUT**, not HDMI IN. The user reports that the laptop has **HDMI IN**, so its HDMI input viewer or capture application should display the Zybo signal. Ethernet has no role in the primary live-video path; it can carry optional debug frames and metrics. The Python UDP viewer is for that optional Ethernet path, not for HDMI capture.
+Use the Zybo's **HDMI OUT** for a monitor or USB HDMI capture device. The MSI Bravo 15 C7VFK laptop's built-in HDMI port is an output, so a direct HDMI cable cannot display the Zybo signal there. The Python UDP viewer receives frames over Ethernet after PS Ethernet firmware is implemented; it does not capture HDMI.
 
 ## Baseline architecture
 
@@ -30,7 +30,7 @@ OV5647 RAW10, 2 CSI-2 lanes
   -> custom RTL frame monitor + optional streaming edge/motion metric
   -> AXI VDMA write -> PS DDR frame buffers -> AXI VDMA read
   -> Bayer8 luma-to-RGB888 RTL -> AXI4-Stream to Video Out + VTC
-  -> Digilent rgb2dvi IP -> Zybo HDMI OUT -> laptop HDMI IN
+  -> Digilent rgb2dvi IP -> Zybo HDMI OUT -> monitor or USB HDMI capture
 
 Zynq ARM software is still required for sensor I2C, CSI control, and both VDMA channels. Ethernet and Python are optional diagnostics. The initial HDMI image is grayscale Bayer samples; color demosaicing is a later enhancement.
 ```
@@ -44,18 +44,18 @@ Keep the MIPI analog PHY and CSI-2 packet receiver as vendor IP. The portfolio R
 3. In the installed Vivado, check CSI-2 RX IP availability, license status, two-lane RAW10 support, device support, implementation results, and bitstream generation. Licensing statements vary by IP and version; the installed tool result is authoritative.
 4. The board manual reports the Pcam link was tested to **672 Mb/s per lane**. Keep the selected sensor mode and programmed link rate within that board-validated ceiling. Do not infer the lane rate from active pixel payload alone; use the sensor PLL/configuration and verify with the receiver status.
 5. Start at **640x480 RAW10**, using a proven OV5647 mode and a modest frame rate. The upstream Linux OV5647 driver documents a VGA RAW10 mode and link-frequency settings, but its tables still need adaptation and verification for this camera module. Treat 720p/1080p as stretch targets after measured closure.
-6. Start with a known frame in DDR so HDMI timing and the laptop input can be checked independently of camera bring-up.
+6. Start with a known frame in DDR so HDMI timing and a monitor/capture input can be checked independently of camera bring-up.
 
 ## Work packages and acceptance gates
 
 | Stage | Implementation | Evidence required |
 | --- | --- | --- |
 | 0. Inventory | Inspect local Vivado/Vitis, board, sensor, port wiring, IP catalog, license and published sources. | `docs/hardware_inventory.md`, photos/labels where available, explicit go/no-go for CSI RX on XC7Z010. |
-| 1. HDMI display | Add DDR readback, VGA video timing and HDMI TX; use a known frame for independent display bring-up. | Block design validation, bitstream, timing/DRC, visible test frame on laptop HDMI input. |
+| 1. HDMI display | Add DDR readback, VGA video timing and HDMI TX; use a known frame for independent display bring-up. | Block design validation, bitstream, timing/DRC, visible test frame on an external monitor or USB capture. |
 | 2. RTL core | Write parameterized AXI4-Stream frame checker with frame/line/pixel counters, malformed-frame and stall counters, optional simple edge or ROI activity score. Define AXI-Lite register map or simpler exposed status interface. | Self-checking simulations for SOF/EOL, reset, backpressure, truncated/oversize frames and metric math; synthesis/utilization report. |
 | 3. FPGA integration | Tcl-built Vivado project for exact Z7-10 part; PS DDR/UART/IIC, custom RTL, VDMA read/write and HDMI output. | Clean project recreation, address map, bitstream, utilization and timing reports. |
 | 4. Sensor bring-up | Confirm clock/power-down, read OV5647 chip ID over I2C, apply documented RAW10 mode, confirm D-PHY/CSI lock and nonzero valid frame count. | UART register dump, receiver status, frame-size statistics, recovered sample frame. |
-| 5. Live display | PS firmware initializes camera and both VDMA channels, manages frame buffers, and starts video timing. | Live laptop HDMI screenshot/video, FPS and error counters over 5 minutes, end-to-end latency method and result. |
+| 5. Live display | PS firmware initializes camera and both VDMA channels, manages frame buffers, and starts video timing. | Live monitor/capture image or Ethernet viewer screenshot, FPS and error counters over 5 minutes, end-to-end latency method and result. |
 | 6. Portfolio | Architecture diagram, design choices, test summary, timing/utilization, measured lane and network bandwidth, limitations, 60–90 second demo, resume bullets. | Reproducible build/run instructions and honest result table with tested vs planned items. |
 
 Implement stages in order. A later stage may remain blocked by physical access or IP constraints while earlier simulated work still has value. Preserve the distinction between simulation, synthesis, and actual on-board validation.
@@ -114,7 +114,7 @@ $env:XILINX_LOCAL_USER_DATA='NO'
 & 'C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat' -mode batch -nojournal -nolog -source 'fpga\export_xsa.tcl'
 ```
 
-For the HDMI display smoke test, follow `docs/bringup.md` to build `firmware/hdmi_smoke.c` as a Vitis standalone application, program the `.bit`, run the ELF and select HDMI input on the laptop. For optional UDP viewer testing, install `host/requirements.txt` and run `python host/viewer.py`, then `python host/demo_sender.py` in another terminal. That local synthetic test does not require the Zybo. Correct Bayer ordering for the physical sensor remains to be established.
+For the HDMI display smoke test, follow `docs/bringup.md` to build `firmware/hdmi_smoke.c` as a Vitis standalone application, program the `.bit`, run the ELF, and view Zybo HDMI OUT on an external monitor or USB HDMI capture device. For local UDP viewer testing, install `host/requirements.txt` and run `python host/viewer.py`, then `python host/demo_sender.py` in another terminal. That synthetic test does not require the Zybo. Correct Bayer ordering for the physical sensor remains to be established.
 
 ## Sources and limits
 

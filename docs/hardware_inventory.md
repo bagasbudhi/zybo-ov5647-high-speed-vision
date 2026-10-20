@@ -5,10 +5,10 @@
 | Target board | User reports Digilent Zybo Z7-10; Vivado target set to `xc7z010clg400-1`. | Read board revision from PCB. |
 | Camera | User reports Pi Camera Module 5MP compatible OV5647, plugged into Pcam port. | Identify exact module maker/revision, ribbon orientation, oscillator and GPIO power circuit; read sensor ID. |
 | Tool | `C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat`, Vivado 2025.2 build 6299465. Official Digilent Z7-10 board files were copied into `fpga/board_files` under their MIT license. | Verify physical board revision. |
-| Processor tools | Vitis 2025.2 and `xsct.bat` exist. | Toolchain build and target connection not tested. |
+| Processor tools | Vitis 2025.2 and `xsct.bat` exist; XSCT connected to both Cortex-A9 cores and programmed the board over JTAG. | Build a complete board application. |
 | Camera receiver IP | `mipi_csi2_rx_subsystem:6.0`, two lanes, RAW10, nominal 292 Mb/s per lane generated for XC7Z010; IP status says Included. | Test exact sensor lane rate; synthesize/implement integrated receiver with Pcam pins and clocking. |
 | Board link | Digilent manual: two CSI-2 lanes tested to 672 Mb/s each. | Verify mode and lock in hardware. |
-| Laptop path | User confirms the laptop has HDMI IN and the HDMI cable is present. Zybo HDMI OUT is the primary display path. | Identify the laptop's HDMI input viewing application and verify it locks to the Zybo's 640 × 480 signal. |
+| Laptop path | MSI Bravo 15 C7VFK. [MSI specifies HDMI-out](https://storage-asset.msi.com/excelSku/ca/nb/Bravo%2015%20C7VFK-057CA%20.pdf), so a direct cable from Zybo HDMI OUT cannot show video on its built-in port. Ethernet link is up at 1 Gbps. | Use an external HDMI monitor or USB capture device to view HDMI; build board Ethernet firmware for the Python viewer. |
 
 The installed Vivado initially failed at Tcl Store user app installation. Launching with `XILINX_LOCAL_USER_DATA=NO` solved startup. A regular `launch_runs` child failed with `rundef.js ... Access denied` in this managed workspace, so the build uses in-process `synth_design` for block-level RTL. This environment behavior is separate from FPGA design validity.
 

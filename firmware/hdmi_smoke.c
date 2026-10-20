@@ -44,7 +44,7 @@ int main(void)
     /* Circular MM2S playback of three identical frame addresses. The last
      * VSIZE write commits and starts the VDMA read channel. No S2MM startup.
      */
-    reg_write(VDMA_BASE, 0x00u, 0x00000001u);
+    reg_write(VDMA_BASE, 0x00u, 0x00000003u);
     reg_write(VDMA_BASE, 0x5cu, ZCAM_FRAME_BASE);
     reg_write(VDMA_BASE, 0x60u, ZCAM_FRAME_BASE);
     reg_write(VDMA_BASE, 0x64u, ZCAM_FRAME_BASE);
