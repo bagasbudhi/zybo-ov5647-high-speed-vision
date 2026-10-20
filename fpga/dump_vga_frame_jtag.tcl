@@ -1,6 +1,11 @@
 # Dump a stopped S2MM frame buffer to an ignored build artifact.
 set root [file normalize [file join [file dirname [info script]] ..]]
-set output [file join $root build capture ov5647_colorbars_640x480.raw]
+set label colorbars
+if {$argc > 0} {set label [lindex $argv 0]}
+if {![regexp {^[a-zA-Z0-9_]+$} $label]} {
+    error "Frame label must contain only letters, digits, and underscores"
+}
+set output [file join $root build capture "ov5647_${label}_640x480.raw"]
 file mkdir [file dirname $output]
 connect
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}

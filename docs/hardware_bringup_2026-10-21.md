@@ -52,7 +52,7 @@ These results verify live CSI-2 packets and frame-end events from the attached c
 
 `fpga/capture_vga_probe_jtag.tcl` started the VDMA S2MM channel with three DDR frame buffers at `0x11000000`, `0x11080000`, and `0x11100000`, using 640-byte stride and 640×480 geometry. The first status was **`0x00015810`**. The [VDMA status bit definitions](https://docs.amd.com/r/en-US/pg020_axi_vdma/S2MM_VDMASR-S2MM-VDMA-Status-Register-Offset-34h) identify bits 14, 12, 11, and 4 as error IRQ, frame-count IRQ, start-of-frame late, and internal error respectively. This arose during capture startup in the middle of a running sensor stream. After clearing sticky bits and waiting 500 ms while capture continued, status was **`0x00011000`**: frame-count IRQ, with no error bits. S2MM was stopped before dumping DDR.
 
-Sentinel words written to all three DDR buffers were overwritten by VDMA. Sparse samples across rows and columns varied in the expected test-bar pattern. `fpga/dump_vga_frame_jtag.tcl` read one stopped 640×480 frame (307,200 bytes) to an ignored build file, and `host/raw8_to_png.py` converted it to [this captured grayscale Bayer image](captures/ov5647_colorbars_640x480.png). The PNG was visually inspected on the laptop. The binary contains only `0x00` and `0xFF` pixel values because the sensor color-bar generator was enabled. This verifies a camera-to-CSI-to-custom-RTL-to-VDMA-to-DDR path for the test pattern. It does not yet verify natural-scene imaging, continuous buffer ownership, sustained FPS, HDMI display, or Ethernet streaming.
+Sentinel words written to all three DDR buffers were overwritten by VDMA. Sparse samples across rows and columns varied in the expected test-bar pattern. `fpga/dump_vga_frame_jtag.tcl` read one stopped 640×480 frame (307,200 bytes) to an ignored build file, and `host/raw8_to_png.py` converted it to [this captured grayscale Bayer image](captures/ov5647_colorbars_640x480.png). The PNG was visually inspected on the laptop. The binary contains only `0x00` and `0xFF` pixel values because the sensor color-bar generator was enabled. This verifies a camera-to-CSI-to-custom-RTL-to-VDMA-to-DDR path for the test pattern. It does not yet verify continuous buffer ownership, sustained FPS, HDMI display, or Ethernet streaming.
 
 ```powershell
 & 'C:\AMDDesignTools\2025.2\Vitis\bin\xsct.bat' fpga/capture_vga_probe_jtag.tcl
@@ -60,6 +60,17 @@ Sentinel words written to all three DDR buffers were overwritten by VDMA. Sparse
 python host/raw8_to_png.py build/capture/ov5647_colorbars_640x480.raw build/capture/ov5647_colorbars_640x480.png
 ```
 
+## Optical scene check
+
+With the test pattern disabled, the first optical frame was very dark (`2–6` in Bayer8). The pinned Linux driver uses manual exposure and gain controls. `fpga/set_ov5647_optical_controls_jtag.tcl` set 500 exposure lines (the VGA timing limit minus four), analog gain 32, and disabled the test pattern. A fresh S2MM capture had status `0x00011000` after clearing startup flags, and its stopped DDR dump contained **30 distinct values from 2 to 41**. The PNG showed recognizable room geometry, though it remained dim. That scene image is kept under ignored `build/capture/` and is not published to protect the owner's privacy.
+
+```powershell
+& 'C:\AMDDesignTools\2025.2\Vitis\bin\xsct.bat' fpga/set_ov5647_optical_controls_jtag.tcl
+& 'C:\AMDDesignTools\2025.2\Vitis\bin\xsct.bat' fpga/capture_vga_probe_jtag.tcl
+& 'C:\AMDDesignTools\2025.2\Vitis\bin\xsct.bat' fpga/dump_vga_frame_jtag.tcl optical_local
+python host/raw8_to_png.py build/capture/ov5647_optical_local_640x480.raw build/capture/ov5647_optical_local_640x480.png
+```
+
 ## Next gate
 
-Turn off the sensor test pattern, recover a natural-scene frame, then measure sustained frame rate and errors. Ethernet video firmware and the Python laptop viewer remain to be integrated. No HDMI cable is connected or needed for JTAG/DDR capture checks.
+Improve optical exposure, then measure sustained frame rate and errors. Ethernet video firmware and the Python laptop viewer remain to be integrated. No HDMI cable is connected or needed for JTAG/DDR capture checks.
