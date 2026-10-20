@@ -5,9 +5,9 @@ set root [file normalize [file join [file dirname [info script]] ..]]
 connect
 puts "ZCAM_TARGETS=[targets]"
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
-stop
+catch {stop}
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #1"}
-stop
+catch {stop}
 targets -set -filter {name =~ "xc7z010"}
 fpga [file join $root artifacts zybo_camera_system.bit]
 targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}

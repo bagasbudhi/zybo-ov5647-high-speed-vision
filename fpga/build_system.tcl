@@ -32,10 +32,20 @@ set_property -dict [list CONFIG.c_include_mm2s {1} \
   CONFIG.c_m_axis_mm2s_tdata_width {8}] $vdma
 set iic [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_iic:2.1 camera_iic]
 make_bd_intf_pins_external [get_bd_intf_pins camera_iic/IIC]
+set cam_power [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 camera_power]
+# Raspberry Pi Camera Rev 1.3: CAM_IO0 (Pcam pin 11) is the host-controlled
+# camera power enable. Keep it low after PL configuration until PS software
+# deliberately enables it. Pcam pin 12 remains unconnected.
+set_property -dict [list CONFIG.C_GPIO_WIDTH {1} CONFIG.C_ALL_OUTPUTS {1} \
+  CONFIG.C_DOUT_DEFAULT {0x00000000}] $cam_power
+make_bd_pins_external [get_bd_pins camera_power/gpio_io_o]
+set_property name cam_power_en [get_bd_ports gpio_io_o_0]
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
   -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins camera_vdma/S_AXI_LITE]
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
   -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins camera_iic/S_AXI]
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
+  -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins camera_power/S_AXI]
 puts "HP_PINS=[get_bd_intf_pins ps7/*HP*]"
 puts "VDMA_PINS=[get_bd_intf_pins camera_vdma/*]"
 set hp_axi [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 hp_axi]

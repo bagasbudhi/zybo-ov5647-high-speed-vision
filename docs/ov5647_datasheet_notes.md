@@ -11,6 +11,6 @@ Source: [OV5647 preliminary specification, version 1.0](https://cdn.sparkfun.com
 | The master clock must run at least 1 ms before SCCB access; allow 20 ms after PWDN release or RESETB release for initialization. | Section 2.5 | The previous chip-ID attempt did not verify these preconditions, so its TX error does not prove a bad sensor. |
 | Sensor supply domains differ from the connector's 3.3 V rail. | Key specifications and section 2.5 | Never apply Pcam 3.3 V directly to an unknown die pin. The camera PCB must provide the proper regulation and I/O translation. |
 
-## Current hardware conclusion
+## First probe and resolution
 
-The AXI IIC transaction to address `0x36` produced no chip-ID bytes and a transmit error. Since the current FPGA design leaves Pcam GPIO pins 11 and 12 unused and the exact camera PCB is unidentified, first verify the ribbon orientation, PCB markings, clock source, power-enable circuit and reset circuit. Only then change FPGA GPIO assignments or drive those pins. A photo of both PCB sides and the ribbon at the Zybo connector is needed to make that change safely.
+The first AXI IIC transaction to address `0x36` produced no chip-ID bytes because the initial FPGA design did not enable the camera module. Photos subsequently identified Raspberry Pi Camera Rev 1.3 with an on-board oscillator component. The revised FPGA design controls Pcam pin 11 through AXI GPIO; after driving it high and waiting 50 ms, the camera returned `0x56`, `0x47`. See the [physical test log](hardware_bringup_2026-10-21.md). Pcam pin 12 is still unused. CSI-2 streaming has not yet been tested.

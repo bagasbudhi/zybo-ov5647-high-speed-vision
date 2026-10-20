@@ -1,5 +1,7 @@
 # Physical bring-up log — 20 October 2026
 
+Historical log. The camera was identified successfully after Pcam pin 11 was enabled on [21 October](hardware_bringup_2026-10-21.md).
+
 ## Connections observed
 
 - Windows detects a Digilent FTDI USB serial/JTAG device; UART appears as COM11.
