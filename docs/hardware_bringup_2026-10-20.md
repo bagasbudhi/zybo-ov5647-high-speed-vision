@@ -40,3 +40,9 @@ The owner supplied the [OV5647 sensor datasheet](https://cdn.sparkfun.com/datash
 2. Obtain clear photos of both sides of the camera PCB and the ribbon orientation at the Zybo Pcam socket.
 3. Identify the exact module's power-enable and oscillator circuit, then add the appropriate GPIO/clock control to the FPGA design and retry the chip-ID read.
 4. Only after a valid `0x5647` ID, initialize the sensor and VDMA S2MM capture path.
+
+## Retest after the ribbon was inserted
+
+A later photo on 20 October shows a ribbon entering J2 between HDMI RX and HDMI TX; the earlier photo showed J2 empty. The angle does not establish which side of the ribbon has exposed contacts or show the camera-end connector. The board had been power cycled, so JTAG initially reported that the FPGA bitstream was absent. The existing bitstream was reloaded into volatile configuration, PS DDR was initialized, and the HDMI grayscale frame/VDMA smoke setup again reported `0x00011000` for MM2S status (no transfer error).
+
+The chip-ID probe was repeated with the ribbon visible in J2. AXI IIC began idle (`SR=0xC0`), then reported `ISR=0xD6`, TX FIFO occupancy 3, and RX FIFO occupancy 0. No `0x5647` ID was obtained. The IIC controller was reset to idle (`SR=0xC0`). This result is consistent with the previous attempt, but neither photo verifies camera-side ribbon orientation or the module power/clock circuit. Do not interpret the failed read as proof that the sensor is defective.
