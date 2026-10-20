@@ -7,7 +7,7 @@
 | Cortex-A9 UDP packetizer | Cross-compiled | `firmware/zcam_protocol.c` compiled with Vitis `arm-none-eabi-gcc -Wall -Wextra -Werror`; no Vitis application or on-board UDP send has been built. |
 | HDMI smoke test C | Cross-compiled | `firmware/hdmi_smoke.c` compiled for Cortex-A9 with `-Wall -Wextra -Werror`; it still needs a Vitis standalone BSP, ELF link and hardware run. |
 | Vivado `xvlog/xelab/xsim` | 2 testbenches passed | Frame completion, edge metric, short line, truncated frame, 3 stalled cycles, pass-through data and sidebands; pipeline RAW10 sample conversion. |
-| CSI-2 RX IP generation | Passed | Vivado 2025.2 produced two-lane RAW10, nominal 292 Mb/s/lane IP for XC7Z010; catalog reports Included license. The integrated receiver was routed, but the live link is untested. |
+| CSI-2 RX IP generation | Passed | Vivado 2025.2 produced two-lane RAW10, nominal 292 Mb/s/lane IP for XC7Z010; catalog reports Included license. The integrated receiver was routed and live RAW10 packets were observed on hardware. |
 | Custom RTL `synth_design` | Passed | Pipeline top: 51 LUTs, 188 registers, 0 BRAM, 0 DSP. In-process block synthesis only. |
 | Custom RTL timing summary | WNS +2.763 ns at 100 MHz | Synthesis estimate for the isolated pipeline, not placed-and-routed board timing. |
 | Digilent board-preset block design | Validated | PS7 DDR/ENET0, AXI IIC, two-lane CSI RX, custom RTL, VDMA S2MM/MM2S, PS HP0, VGA VTC, AXI video out and Digilent HDMI TX. |
@@ -17,7 +17,9 @@
 | DRC | 0 errors | 12 warnings: 3 LUT-equation notices, 8 RAMB36 async-control notices and 1 unroutable-load notice. Review before hardware signoff. |
 | Physical FPGA/DDR/VDMA smoke | Passed register checks | JTAG programmed the FPGA, initialized DDR, downloaded grayscale bars, and started VTC/VDMA MM2S. VDMA status had no transfer error. No display/capture observation yet. |
 | OV5647 chip-ID read | **Passed on physical board** | After routing Pcam pin 11/G20 to AXI GPIO and enabling it, AXI IIC at 7-bit address `0x36` returned `0x56`, `0x47` from `0x300A`/`0x300B`. Earlier attempts without the enable returned no bytes. See the [21 October log](hardware_bringup_2026-10-21.md). |
-| Live OV5647 to HDMI/Ethernet | Not done | Sensor mode setup, CSI status verification, and VDMA capture firmware are still needed. HDMI validation needs an external monitor or USB capture device; Ethernet streaming firmware is not yet implemented. |
+| Live OV5647 CSI-2 reception | **Passed on physical board** | VGA RAW10 packets and frame-end events observed. VC0 data type was `0x2B`; line payload was 800 bytes. After clearing prior flags, no fresh CSI error bits appeared in the observation window. |
+| OV5647 test-pattern DDR capture | **Passed on physical board** | VDMA S2MM wrote three 640×480 buffers. After clearing startup flags, S2MM status was `0x00011000`, with no error bits. One 307,200-byte frame was dumped by JTAG and visually inspected as a PNG. |
+| Live OV5647 to HDMI/Ethernet | Not done | Natural-scene imaging, sustained buffer management/FPS, visible HDMI output, and Ethernet streaming firmware remain. HDMI validation needs an external monitor or USB capture device. |
 
 The final HDMI build log is `build/hdmi_final_build.log`. It uses the local Digilent IP copy in `fpga/ip_repo` and a pixel-clock-synchronized reset. The updated XSA contains the HDMI VTC and TX blocks; it does not embed the bitstream. The HDMI output uses 640 × 480 timing at a 25 MHz pixel clock, so the exact refresh rate is approximately 59.52 Hz. The image is grayscale until a color demosaic stage is added. The FPGA/DDR/VDMA path was checked on board; HDMI output has not been observed on a display or capture device.
 
