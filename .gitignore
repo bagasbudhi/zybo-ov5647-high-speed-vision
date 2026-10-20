@@ -3,6 +3,7 @@ vendor/
 .gen/
 .srcs/
 artifacts/*.log
+artifacts/ps7_init*
 clockInfo.txt
 dfx_runtime.txt
 xsim.dir/
