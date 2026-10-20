@@ -30,6 +30,8 @@ This proves programming, DDR initialization, data download, and VDMA register op
 
 Pcam SCL/SDA pins F20/F19 are constrained in the bitstream. The module's power-enable/clock wiring and ribbon orientation are still unknown. The current bitstream leaves Pcam GPIO pins 11 and 12 unused. [Raspberry Pi's 15-pin camera pinout](https://www.raspberrypi.com/documentation/accessories/camera.html#camera-connector-pinout-15-pin) says pin 11 is typically an active-high power enable; [Digilent's Zybo Z7 manual](https://digilent.com/reference/_media/reference/programmable-logic/zybo-z7/zybo-z7_rm.pdf) confirms the Pcam connector exposes those GPIO signals. This is a possible cause of the missing acknowledgement, not a diagnosis. Do not drive either pin until the exact camera module circuit is identified from its markings or photos.
 
+Digilent's manual specifies that at the **Zybo Pcam socket**, the FFC contacts face the board's top edge, away from its center, and the off-white latch must be fully closed. Its Pcam table identifies pin 11 and pin 12 as GPIO, pins 13/14 as SCL/SDA with 1.5 kΩ pull-ups, and pin 15 as 3.3 V. The board connection alone does not establish the camera module's pin-11/12 circuitry. Check cable orientation with board power off before retrying I²C.
+
 The owner supplied the [OV5647 sensor datasheet](https://cdn.sparkfun.com/datasheets/Dev/RaspberryPi/ov5647_full.pdf). Its SCCB address and chip-ID registers confirm that the probe targeted the right sensor address; its power-up sequence requires a running master clock and delays that have not been verified on this camera board. See [datasheet notes](ov5647_datasheet_notes.md). The transmit error therefore does not establish that the sensor itself is faulty.
 
 ## Next evidence needed
