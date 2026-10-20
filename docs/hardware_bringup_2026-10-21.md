@@ -33,6 +33,21 @@ python fpga/prepare_hdmi_smoke.py
 
 Expected ID bytes are `0x56`, `0x47`. The chip-ID probe script leaves data in the RX FIFO; the following script reads it. Do not run the FIFO-read script alone after a reset.
 
+## VGA RAW10 and live CSI-2 packet test
+
+The OV5647 register table in `fpga/ov5647_vga_regs.tcl` was extracted from a [pinned Linux OV5647 driver](https://github.com/torvalds/linux/blob/f47d223627f80cb7a1eb14c585fe6cb35de5e984/drivers/media/i2c/ov5647.c). Its GPL-2.0 attribution is retained in the generated file. The JTAG script applied 51 common entries, 28 VGA entries before stream-on, timing and stream registers, enabled sensor color bars, then wrote `0x0100=1`. All 89 I²C transactions completed without a transmit error. An earlier write and readback of software standby `0x0100=0` also succeeded.
+
+Before stream-on, CSI interrupt status was `0x08021002`. After stream-on, the [CSI receiver](https://docs.amd.com/r/en-US/pg232-mipi-csi2-rx/Interrupt-Status-Register) reported `0x88021402`, including the Frame Received bit. Its packet count subsequently increased from **20,856 to 28,836** across a short observation window. The VC0 image information showed data type **`0x2B` (RAW10)** and byte count **`0x0320` (800 bytes)**, matching a 640-pixel RAW10 line. After clearing old sticky interrupt bits and observing a fresh window, the ISR was **`0x80020000`**: Frame Received and Stop State, without fresh SoT sync, ECC, CRC, or frame synchronization error bits. The [core status packet count](https://docs.amd.com/r/en-US/pg232-mipi-csi2-rx/Core-Status-Register) and [image information register](https://docs.amd.com/r/en-US/pg232-mipi-csi2-rx/Image-Information-1-Registers-VC0-to-VC15) meanings follow AMD PG232.
+
+From the repository root after loading the current bitstream and enabling Pcam pin 11:
+
+```powershell
+& 'C:\AMDDesignTools\2025.2\Vitis\bin\xsct.bat' fpga/configure_ov5647_vga_jtag.tcl
+& 'C:\AMDDesignTools\2025.2\Vitis\bin\xsct.bat' fpga/check_csi_frames_jtag.tcl
+```
+
+These results verify live CSI-2 packets and frame-end events from the attached camera. They do not yet prove that the custom RTL and VDMA wrote a complete frame into DDR or that the color-bar pixels are correct.
+
 ## Next gate
 
-Apply a documented OV5647 VGA RAW10 mode, then verify CSI receiver status and actual DMA frames. Ethernet video firmware and the Python laptop viewer remain to be integrated. No HDMI cable is needed for those next control and capture checks.
+Configure VDMA S2MM, recover a complete 640×480 frame from DDR, and check pixel content and error counters. Ethernet video firmware and the Python laptop viewer remain to be integrated. No HDMI cable is connected or needed for those capture checks.
