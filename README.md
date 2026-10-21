@@ -18,6 +18,13 @@ The photo below is the owner's TV photo of the earlier Zybo HDMI color-bar outpu
 
 The image is reconstructed on the laptop from the board's DDR Bayer8 frame dump using the repository's Python reference for the same causal interpolation used in RTL. It demonstrates camera reception, DDR capture, and the Bayer interpretation; it is not a TV/HDMI screenshot. The test image was made with the sensor's color-bar pattern enabled. The JTAG raw dump stays under ignored `build/capture/` and is not committed.
 
+
+## Live camera measurements
+
+A previous physical-board run with the OV5647 test pattern disabled and auto exposure/gain enabled recorded 7,351 completed frames. At the old threshold of 32, the detector counted 67,427 hits of 76,800 ROI pixels (87.8%) and returned the entire ROI as its box. This is a successful live sensor/CSI/DDR/metric run, but the threshold was too permissive for useful localization. A private Bayer capture evaluated offline at threshold 192 yielded 552 hits and box x=296..380, y=180..286; this is not yet a hardware measurement. The current JTAG session can see the FPGA but cannot access the Zynq ARM/DAP processor, so the new threshold-192 build has not been freshly verified on the board.
+
+Use `fpga/run_live_vision_demo_jtag.tcl` to program and start the live path, then save 10 seconds of frame and detector metrics to ignored `build/capture/live_vision_metrics.csv`. It requires working PS/ARM JTAG and DDR initialization.
+
 ## Hardware path
 
 ```text
@@ -78,6 +85,10 @@ Useful scripts:
   ```
 
 The owner confirmed the earlier color-bar output on a TV connected to Zybo HDMI OUT. The red-box threshold-192 build is ready in `artifacts/`; its on-board display still needs a fresh JTAG run. A laptop HDMI connector is commonly output-only; a USB HDMI capture device is required to view Zybo HDMI on such a laptop.
+
+## Neural-network patch detector experiment
+
+The repository also includes a small 16-8-1 quantized MLP. The laptop reference scans 24x24 windows over a captured Bayer8 frame; standalone SystemVerilog classifies pooled 4x4 grayscale patches. Synthesis-only cost on the XC7Z010 is 424 LUTs and 298 registers, with 0 DSP and 0 BRAM. The sample model was trained only on generated bright-rectangle patches. A deterministic synthetic holdout test scored 497/500 positive patches and 500/500 negative patches at score threshold 0.88. This is a learning and RTL-inference experiment, not a trained automotive object detector. The MLP is not connected to the camera/HDMI FPGA block design, and its metrics are synthetic, not camera accuracy. See [neural detector notes](docs/neural_detector.md).
 
 ## Portfolio framing
 

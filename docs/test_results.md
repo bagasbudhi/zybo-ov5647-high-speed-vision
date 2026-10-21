@@ -5,14 +5,19 @@
 | Check | Result | Scope |
 | --- | --- | --- |
 | Bayer/ROI/overlay XSim | Passed | All four CFA phases, AXI stalls, detection count and box, red outline on next frame, empty-frame clear. |
-| Host unit tests | 5 passed | Bayer reference and UDP protocol tests. |
-| Threshold selection | 192 | A private optical frame yielded 552 hits and bbox x=296..380, y=180..286; scene file is not published. |
+| Host unit tests | 7 passed | Bayer reference, UDP protocol, and tiny MLP synthetic detection. |
+| Live sensor metrics (earlier threshold-32 run) | Passed | 7,351 completed frames; 67,427/76,800 bright ROI pixels; bbox covered the full ROI. |
+| Threshold selection | 192 offline | A private optical frame yielded 552 hits and bbox x=296..380, y=180..286; this has not been confirmed on FPGA. |
 | Vivado system route | Passed | WNS +0.599 ns, TNS 0, 0 failing endpoints; 8,400 LUTs, 13,402 registers, 9 BRAM tiles, 0 DSP. |
 | DRC | Passed | 0 errors; report retained in `system_drc.txt`. |
 | Artifacts | Built | Updated `artifacts/zybo_camera_system.bit` and matching XSA include the threshold-192 design. |
 | TV color bars | Owner confirmed | Earlier HDMI TX run displayed color bars on the connected TV. |
-| Updated physical-board check | Incomplete | JTAG saw `xc7z010`, but the ARM/DAP target returned AHB AP transaction errors during PS initialization. The threshold-192 red-box overlay is not claimed as TV-verified. |
+| Standalone NN RTL | Passed simulation and synthesis | XSim passed; synthesis-only utilization is 424 LUTs, 298 registers, 0 DSP, 0 BRAM on XC7Z010. Not integrated into the camera system. |
+| NN synthetic holdout | 997/1,000 correct | 497/500 centered targets and 500/500 negatives at score threshold 0.88; generated data only. |
+| Updated physical-board check | Incomplete | JTAG sees `xc7z010`, but the ARM/DAP target returns AHB AP transaction errors. The one-command live capture/CSV script is `fpga/run_live_vision_demo_jtag.tcl`; the new threshold-192 overlay is not claimed as TV-verified. |
 
+
+## Earlier threshold-32 camera and HDMI checks (historical)
 
 ## Bayer RGB and ROI milestone update
 
@@ -21,7 +26,7 @@ The following results supersede earlier grayscale-only and “no HDMI path start
 | Check | Result | Scope |
 | --- | --- | --- |
 | Bayer demosaic + ROI detector XSim | Passed | Four CFA phases, constant RGB reconstruction in the interior, AXI sidebands, downstream stalls, bright-pixel count, bounding box, and malformed frame. |
-| Host Bayer PNG/reference tests | 3 passed | Four CFA phase patterns, frame-size validation, and PNG output; all five host tests pass including existing UDP protocol tests. |
+| Host Bayer PNG/reference tests | 3 passed | Four CFA phase patterns, frame-size validation, and PNG output; all seven host tests pass including existing UDP protocol tests and the tiny MLP tests. |
 | Current routed design | Passed | Vivado 2025.2 threshold-192 build; WNS +0.599 ns, no failing setup endpoints; 8,400 LUTs, 13,402 registers, 9 BRAM tiles. |
 | Current bitstream/XSA | Produced, not freshly installed | Bitstream and regenerated XSA include demosaic, detector, red box and metrics GPIO. The latest JTAG attempt failed at ARM/DAP initialization. |
 | OV5647 color-bar frame | Captured | Sensor color-bar mode, CSI packet counter advanced, S2MM status `0x00011000`, 307,200-byte Bayer8 buffer read from DDR over JTAG, and rendered to [`ov5647_colorbars_demosaiced_640x480.png`](captures/ov5647_colorbars_demosaiced_640x480.png) with the host reference. |
@@ -68,3 +73,12 @@ $env:XILINX_LOCAL_USER_DATA='NO'
 ```
 
 To view synthetic video, install `host/requirements.txt`, run `python host/viewer.py` in one terminal, then `python host/demo_sender.py` in another. This checks the laptop path only; it does not read the camera.
+
+## Neural network experiment
+
+- Host MLP: deterministic synthetic holdout set, 500 centered-target and 500 negative patches; at score threshold 0.88 it accepted 497/500 positives and 0/500 negatives.
+- Sliding-window test: detected a synthetic 16x16 target in an 80x64 grayscale frame; the 24x24 proposal box IoU was 0.444 with the generated target.
+- Standalone SystemVerilog MLP: XSim passed centered target, off-center negative, and output backpressure checks. It classifies one 4x4 pooled patch in 136 clocks.
+- The MLP is not integrated into the CSI/VDMA/HDMI design. No real-camera object detection accuracy, throughput, FPGA resource use, or automotive performance is claimed.
+
+Standalone MLP utilization is synthesis-only (`tiny_nn_synthesis_utilization.txt`); no routed timing, power estimate, or full-system integration result is claimed for it.

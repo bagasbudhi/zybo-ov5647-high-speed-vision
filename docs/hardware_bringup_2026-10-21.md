@@ -80,3 +80,9 @@ Improve optical exposure, then measure sustained frame rate and errors. Ethernet
 After the earlier camera and color-bar checks, the detector gained a two-pixel red bounding-box overlay. A private natural-light Bayer frame was evaluated offline against the host demosaic reference; threshold 192 produced 552 ROI hits and bounds x=296..380, y=180..286. This capture is excluded from the repository. Auto exposure and gain were enabled through `fpga/set_ov5647_live_controls_jtag.tcl`; the sensor test pattern was set off.
 
 Vivado 2025.2 completed routing and bitstream generation for this change: WNS +0.599 ns, zero failing setup endpoints, 8,400 LUTs, 13,402 registers, and 9 BRAM tiles. The owner supplied a photo of the HDMI test pattern on a TV from the previous smoke build. A fresh attempt to program and initialize the updated design could not proceed because the JTAG ARM/DAP target was not responding. Therefore, the new red outline and threshold result are simulation/build/local-capture validated, but not yet visually confirmed on the TV.
+
+## Live-camera metric sample and repeatable run
+
+In a prior live optical run with sensor test bars disabled and auto exposure/gain enabled, the JTAG metric read returned 7,351 completed frames, 67,427 bright pixels in the 76,800-pixel ROI, detection asserted, and bbox x=160..479, y=120..359. The full-ROI box shows threshold 32 was too low for useful localization in that scene. A later offline pass over the private Bayer8 capture at threshold 192 yielded 552 pixels and bbox x=296..380, y=180..286; these threshold-192 values were not read from the FPGA.
+
+`fpga/run_live_vision_demo_jtag.tcl` now automates live sensor setup, camera-to-HDMI startup, status checks, and 20 half-second samples to ignored `build/capture/live_vision_metrics.csv`. The current JTAG session enumerates the FPGA but the ARM/DAP target reports an AHB AP transaction error, so this automation could not be rerun in the current session.
