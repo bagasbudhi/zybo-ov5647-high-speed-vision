@@ -107,7 +107,7 @@ set demosaic [create_bd_cell -type module -reference axis_bayer_demosaic bayer_d
 connect_bd_intf_net [get_bd_intf_pins camera_vdma/M_AXIS_MM2S] [get_bd_intf_pins bayer_demosaic/s_axis]
 set detector [create_bd_cell -type module -reference axis_bright_roi_detector bright_roi_detector]
 set_property -dict [list CONFIG.ROI_X0 {160} CONFIG.ROI_Y0 {120} \
-  CONFIG.ROI_X1 {479} CONFIG.ROI_Y1 {359} CONFIG.LUMA_THRESHOLD {32}] $detector
+  CONFIG.ROI_X1 {479} CONFIG.ROI_Y1 {359} CONFIG.LUMA_THRESHOLD {192}] $detector
 connect_bd_intf_net [get_bd_intf_pins bayer_demosaic/m_axis] [get_bd_intf_pins bright_roi_detector/s_axis]
 set video_out [create_bd_cell -type ip -vlnv xilinx.com:ip:v_axi4s_vid_out:4.0 video_out]
 set_property -dict [list CONFIG.C_HAS_ASYNC_CLK {1} CONFIG.C_VTG_MASTER_SLAVE {1}] $video_out

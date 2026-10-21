@@ -1,10 +1,20 @@
 # Zybo Z7-10 OV5647 Bayer vision demo
 
+## Latest build update (21 October 2026)
+
+The current checked-in build sets the bright-pixel threshold to 192 and draws a two-pixel red outline around the previous completed frame's bounding box. The outline appears one frame later because the detector latches coordinates at frame end. The RTL simulation passes; Vivado 2025.2 routed the updated system with WNS +0.599 ns, 8,400 LUTs, 13,402 registers, 9 BRAM tiles, and zero DRC errors. The matching bitstream and XSA are in `artifacts/`.
+
+The owner supplied a photo of the Zybo HDMI test pattern displayed on a TV. A separate local-only optical capture gave 552 threshold hits and a box at x=296..380, y=180..286 for threshold 192. That capture was used only to choose the initial threshold and is not included in this repository. The threshold-192 build has not yet been confirmed on the physical board: the latest JTAG attempt found the FPGA but the Zynq ARM/DAP target did not respond. See [current limitations](docs/test_results.md).
+
 This portfolio project receives VGA RAW10 from a Raspberry Pi Camera Rev 1.3 / OV5647 over two lane MIPI CSI-2, converts it to Bayer8, writes frames to DDR with AXI VDMA, then reads them through custom Bayer-to-RGB and bright-region RTL before HDMI TX.
 
-**Milestone status (21 October 2026):** Vivado 2025.2 rebuilt and routed the XC7Z010 design. The new FPGA image was programmed over JTAG; OV5647 640×480 color-bar capture and HDMI playback were started; the CSI packet counter advanced; fresh S2MM and MM2S status were both `0x00011000`. A 307,200-byte Bayer8 frame was dumped from DDR over JTAG and reconstructed as the shareable RGB PNG below. Detector readback over JTAG reported 76,800 bright pixels in the center ROI and a bounding box spanning x=160…479, y=120…359. The HDMI signal was not visually inspected at the TV during this build.
+**Camera capture evidence (earlier hardware run):** The OV5647 sent 640x480 RAW10 over CSI-2; the design wrote Bayer8 frames to DDR over VDMA, and a frame was recovered over JTAG and reconstructed as the RGB PNG below. Detector GPIO readback in the earlier threshold-32 build reported 76,800 hits and box x=160..479, y=120..359 while the sensor color bars were enabled. The owner also supplied a TV photo showing an HDMI color-bar test pattern. That photo confirms HDMI TX output from the earlier test; it does not prove live camera-to-TV video or the latest red-box overlay.
 
 ![OV5647 Bayer capture reconstructed to RGB](docs/captures/ov5647_colorbars_demosaiced_640x480.png)
+
+The photo below is the owner's TV photo of the earlier Zybo HDMI color-bar output. It is hardware evidence for HDMI TX on that earlier build; it does not show the new threshold-192 overlay.
+
+![Zybo HDMI test pattern displayed on a TV](docs/captures/zybo_hdmi_tv_colorbars_user_photo.jpeg)
 
 The image is reconstructed on the laptop from the board's DDR Bayer8 frame dump using the repository's Python reference for the same causal interpolation used in RTL. It demonstrates camera reception, DDR capture, and the Bayer interpretation; it is not a TV/HDMI screenshot. The test image was made with the sensor's color-bar pattern enabled. The JTAG raw dump stays under ignored `build/capture/` and is not committed.
 
@@ -24,7 +34,7 @@ The MIPI physical receiver and CSI-2 packet receiver use AMD IP. The custom RTL 
 
 ### Measurable detection
 
-`rtl/axis_bright_roi_detector.v` passes RGB through and computes luma as `(R + 2G + B) / 4`. It counts pixels at or above 32 in the central 320×240 region (x=160…479, y=120…359) and latches the count and bounding box at the end of each valid 640×480 frame. Metrics are connected to AXI GPIO for PS readback. The RTL behavior is simulated; GPIO metric readback was not confirmed over JTAG in this run.
+`rtl/axis_bright_roi_detector.v` computes luma as `(R + 2G + B) / 4`, counts pixels at or above 192 in the central 320x240 region (x=160..479, y=120..359), and latches the count and bounding box at each completed 640x480 frame. The RTL paints a two-pixel red border around the last completed box in the following frame. Metrics connect to AXI GPIO for processor readback. This is a brightness threshold demonstration, not object classification.
 
 See [register map and measurement method](docs/bayer_rgb_detection.md), [verification results](docs/test_results.md), and [hardware bring-up log](docs/hardware_bringup_2026-10-21.md).
 
@@ -56,7 +66,8 @@ Connect the camera's 15-pin ribbon to the Zybo Pcam connector with the board pow
 Useful scripts:
 
 - `fpga/enable_camera_power_jtag.tcl` enables the Pcam power GPIO.
-- `fpga/configure_ov5647_vga_jtag.tcl` configures the tested VGA RAW10 color-bar mode.
+- `fpga/configure_ov5647_vga_jtag.tcl live` configures VGA RAW10 live sensor output; pass `bars` to enable the sensor test pattern.
+- `fpga/set_ov5647_live_controls_jtag.tcl` disables the test pattern and enables auto exposure/gain.
 - `fpga/start_camera_hdmi_jtag.tcl` starts VDMA capture and HDMI playback.
 - `fpga/check_camera_hdmi_jtag.tcl` checks fresh CSI/VDMA status.
 - `fpga/capture_vga_probe_jtag.tcl` captures then stops S2MM; `fpga/dump_vga_frame_jtag.tcl` saves the Bayer8 frame under ignored `build/capture/`.
@@ -66,7 +77,7 @@ Useful scripts:
   python host\bayer8_to_rgb.py build\capture\ov5647_colorbars_640x480.raw docs\captures\frame.png --phase BG
   ```
 
-The HDMI output was started but still needs visual confirmation on an external display. A laptop HDMI connector is commonly output-only; a USB HDMI capture device is required to view Zybo HDMI on such a laptop.
+The owner confirmed the earlier color-bar output on a TV connected to Zybo HDMI OUT. The red-box threshold-192 build is ready in `artifacts/`; its on-board display still needs a fresh JTAG run. A laptop HDMI connector is commonly output-only; a USB HDMI capture device is required to view Zybo HDMI on such a laptop.
 
 ## Portfolio framing
 

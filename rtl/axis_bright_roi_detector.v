@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// AXI4-Stream RGB888 pass-through with a per-frame bright-pixel ROI metric.
+// AXI4-Stream RGB888 with a per-frame bright-pixel ROI metric and red box.
 // Luma approximation is (R + 2*G + B)/4. Results latch at completed frame end.
 module axis_bright_roi_detector #(
     parameter integer WIDTH = 640,
@@ -68,8 +68,19 @@ module axis_bright_roi_detector #(
     wire [8:0] count_min_y = hit ? ((py9 < base_min_y) ? py9 : base_min_y) : base_min_y;
     wire [8:0] count_max_y = hit ? ((py9 > base_max_y) ? py9 : base_max_y) : base_max_y;
 
+    wire bbox_x_inside = (px10 >= last_min_x) && (px10 <= last_max_x);
+    wire bbox_y_inside = (py9 >= last_min_y) && (py9 <= last_max_y);
+    wire bbox_x_edge = (px10 == last_min_x) || (px10 == last_max_x) ||
+                       (px10 == last_min_x + 1'b1) ||
+                       ((last_max_x != 0) && (px10 == last_max_x - 1'b1));
+    wire bbox_y_edge = (py9 == last_min_y) || (py9 == last_max_y) ||
+                       (py9 == last_min_y + 1'b1) ||
+                       ((last_max_y != 0) && (py9 == last_max_y - 1'b1));
+    wire bbox_border = detected_last && bbox_x_inside && bbox_y_inside &&
+                       (bbox_x_edge || bbox_y_edge);
+
     assign s_axis_tready = m_axis_tready;
-    assign m_axis_tdata = s_axis_tdata;
+    assign m_axis_tdata = bbox_border ? 24'hFF0000 : s_axis_tdata;
     assign m_axis_tvalid = s_axis_tvalid;
     assign m_axis_tuser = s_axis_tuser;
     assign m_axis_tlast = s_axis_tlast;

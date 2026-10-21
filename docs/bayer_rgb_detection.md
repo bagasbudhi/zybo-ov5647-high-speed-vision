@@ -10,11 +10,11 @@ The interpolator uses current, left, upper, and upper-left samples. At each pixe
 
 ## Detection metric
 
-The detector receives RGB888 and forwards it unchanged. It computes the integer luma approximation:
+The detector receives RGB888 and overlays a two-pixel red outline from the previous completed frame while forwarding all other pixels. It computes the integer luma approximation. The synthesized system build overrides the RTL default threshold with 192:
 
 ```text
 Y = (R + 2*G + B) >> 2
-hit = (x=160..479) AND (y=120..359) AND (Y >= 32)
+hit = (x=160..479) AND (y=120..359) AND (Y >= 192)
 ```
 
 At a complete 640×480 frame end, it latches the number of hit pixels and the smallest axis-aligned bounding box around them. If no pixel hits, `detected_last=0` and the reported count is zero. The testbench verifies two hit pixels, the box coordinates, a bright pixel outside the ROI, malformed one-line input, stream pass-through, and backpressure.
@@ -34,7 +34,7 @@ The design exposes detector state through two dual-channel AXI GPIO blocks. Each
 
 ## Image evidence
 
-[`captures/ov5647_colorbars_demosaiced_640x480.png`](captures/ov5647_colorbars_demosaiced_640x480.png) is generated from a Bayer8 frame dumped over JTAG from the Zybo's DDR while the OV5647 color-bar test pattern was enabled. The host script `host/bayer8_to_rgb.py` uses the same interpolation policy as the RTL and defaults to BGGR. The generated image is useful to verify frame dimensions and color reconstruction from the received sensor frame. It is not a screenshot of the TV output.
+[`captures/ov5647_colorbars_demosaiced_640x480.png`](captures/ov5647_colorbars_demosaiced_640x480.png) is generated from a Bayer8 frame dumped over JTAG from the Zybo's DDR while the OV5647 color-bar test pattern was enabled. The host script `host/bayer8_to_rgb.py` uses the same interpolation policy as the RTL and defaults to BGGR. The generated image is useful to verify frame dimensions and color reconstruction from the received sensor frame. It is not a screenshot of the TV output. The owner's photo [`zybo_hdmi_tv_colorbars_user_photo.jpeg`](captures/zybo_hdmi_tv_colorbars_user_photo.jpeg) separately shows an HDMI test pattern on a TV from the earlier smoke build; it does not establish live camera-to-TV video. The newer threshold-192 overlay build has not yet been visually verified on hardware.
 
 Recreate it from a new board capture:
 
@@ -44,9 +44,15 @@ python host\bayer8_to_rgb.py build\capture\ov5647_colorbars_640x480.raw docs\cap
 
 ## Validation summary
 
-- Vivado 2025.2 full Z7-10 implementation completed; routed WNS is +0.590 ns with no failing timing endpoints.
-- Routed utilization: 8,310 LUTs (47.22%), 13,402 registers (38.07%), 9 BRAM tiles (15%), 0 DSPs.
+- Vivado 2025.2 full Z7-10 implementation completed; routed WNS is +0.599 ns with no failing timing endpoints.
+- Routed utilization: 8,400 LUTs (47.73%), 13,402 registers (38.07%), 9 BRAM tiles (15%), 0 DSPs.
 - DRC: zero errors, 12 warnings and 2 advisories; see `system_drc.txt`.
 - Bayer/ROI XSim testbench passed all four CFA phases, backpressure, counter, box, and malformed-frame checks.
 - Host tests: 5 passed.
 - JTAG hardware run: camera/CSI packet counter advanced, S2MM and MM2S fresh status both read `0x00011000`, the 307,200-byte Bayer8 frame was dumped from DDR, detector GPIO readback reported 76,800 ROI hits and the full ROI bounding box, and HDMI playback was started. The display panel itself was not visually verified during this run.
+
+## Updated overlay and threshold build (21 October 2026)
+
+`fpga/build_system.tcl` configures `LUMA_THRESHOLD=192`. Applying the matching causal Bayer-to-RGB host reference to a private natural-light capture yielded 552 hits in the ROI and box x=296..380, y=180..286. This is a threshold demonstration on one scene; threshold hits vary with exposure and lighting. The local scene image is deliberately excluded from the public repository.
+
+`sim/tb_axis_bayer_vision.sv` checks that the red border matches the prior frame's box and that an empty frame clears the detector. XSim passes. The owner supplied a photo of the earlier HDMI test pattern on a TV. The threshold-192 bitstream/XSA are built, but the latest physical-board update could not be completed because the JTAG-visible ARM/DAP target did not respond; see `docs/test_results.md`.

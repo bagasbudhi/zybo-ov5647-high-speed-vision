@@ -88,6 +88,7 @@ module tb_axis_bayer_vision;
         .bbox_x_pair(bbox_x), .bbox_y_pair(bbox_y));
 
     task detector_pixel(input integer xx, input integer yy, input [23:0] rgb_in);
+        reg [23:0] expected;
         begin
             @(negedge clk);
             det_data=rgb_in;
@@ -95,7 +96,17 @@ module tb_axis_bayer_vision;
             det_last=(xx==W-1);
             det_valid=1;
             #1;
-            if (!det_mvalid || det_out !== rgb_in) $fatal(1,"detector pass-through mismatch");
+            expected = rgb_in;
+            if (detected && xx >= bbox_x[9:0] && xx <= bbox_x[19:10] &&
+                yy >= bbox_y[8:0] && yy <= bbox_y[17:9] &&
+                (xx == bbox_x[9:0] || xx == bbox_x[19:10] ||
+                 xx == bbox_x[9:0] + 1 || xx + 1 == bbox_x[19:10] ||
+                 yy == bbox_y[8:0] || yy == bbox_y[17:9] ||
+                 yy == bbox_y[8:0] + 1 || yy + 1 == bbox_y[17:9]))
+                expected = 24'hFF0000;
+            if (!det_mvalid || det_out !== expected)
+                $fatal(1,"detector/overlay mismatch at (%0d,%0d): got %06x expected %06x",
+                       xx, yy, det_out, expected);
             @(posedge clk); #1;
             @(negedge clk); det_valid=0; det_user=0; det_last=0;
         end
@@ -136,6 +147,14 @@ module tb_axis_bayer_vision;
         if (bbox_x[9:0] !== 10'd1 || bbox_x[19:10] !== 10'd2 ||
             bbox_y[8:0] !== 9'd1 || bbox_y[17:9] !== 9'd2)
             $fatal(1,"ROI box mismatch x=%h y=%h",bbox_x,bbox_y);
+
+        // On the next frame the prior box is drawn in red, then metrics latch
+        // the dark frame as empty and clear the overlay for the following one.
+        for (y=0;y<3;y=y+1)
+            for (x=0;x<W;x=x+1)
+                detector_pixel(x,y,24'h202020);
+        if (frame_count !== 2 || bright_count !== 0 || detected)
+            $fatal(1,"second frame detection clear mismatch");
 
         @(negedge clk); det_valid=1; det_user=1; det_last=1; det_data=0;
         @(posedge clk); #1;

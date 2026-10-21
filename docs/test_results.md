@@ -1,5 +1,19 @@
 # Verification results through 21 October 2026
 
+## Latest overlay build (21 October 2026)
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Bayer/ROI/overlay XSim | Passed | All four CFA phases, AXI stalls, detection count and box, red outline on next frame, empty-frame clear. |
+| Host unit tests | 5 passed | Bayer reference and UDP protocol tests. |
+| Threshold selection | 192 | A private optical frame yielded 552 hits and bbox x=296..380, y=180..286; scene file is not published. |
+| Vivado system route | Passed | WNS +0.599 ns, TNS 0, 0 failing endpoints; 8,400 LUTs, 13,402 registers, 9 BRAM tiles, 0 DSP. |
+| DRC | Passed | 0 errors; report retained in `system_drc.txt`. |
+| Artifacts | Built | Updated `artifacts/zybo_camera_system.bit` and matching XSA include the threshold-192 design. |
+| TV color bars | Owner confirmed | Earlier HDMI TX run displayed color bars on the connected TV. |
+| Updated physical-board check | Incomplete | JTAG saw `xc7z010`, but the ARM/DAP target returned AHB AP transaction errors during PS initialization. The threshold-192 red-box overlay is not claimed as TV-verified. |
+
+
 ## Bayer RGB and ROI milestone update
 
 The following results supersede earlier grayscale-only and “no HDMI path started” statements below for the current build:
@@ -8,10 +22,10 @@ The following results supersede earlier grayscale-only and “no HDMI path start
 | --- | --- | --- |
 | Bayer demosaic + ROI detector XSim | Passed | Four CFA phases, constant RGB reconstruction in the interior, AXI sidebands, downstream stalls, bright-pixel count, bounding box, and malformed frame. |
 | Host Bayer PNG/reference tests | 3 passed | Four CFA phase patterns, frame-size validation, and PNG output; all five host tests pass including existing UDP protocol tests. |
-| Current routed design | Passed | Vivado 2025.2; WNS +0.590 ns, no failing timing endpoints; 8,310 LUTs, 13,402 registers, 9 BRAM tiles. |
-| Current bitstream/XSA | Produced and installed | Bitstream and regenerated XSA include demosaic, detector, and metrics GPIO. |
+| Current routed design | Passed | Vivado 2025.2 threshold-192 build; WNS +0.599 ns, no failing setup endpoints; 8,400 LUTs, 13,402 registers, 9 BRAM tiles. |
+| Current bitstream/XSA | Produced, not freshly installed | Bitstream and regenerated XSA include demosaic, detector, red box and metrics GPIO. The latest JTAG attempt failed at ARM/DAP initialization. |
 | OV5647 color-bar frame | Captured | Sensor color-bar mode, CSI packet counter advanced, S2MM status `0x00011000`, 307,200-byte Bayer8 buffer read from DDR over JTAG, and rendered to [`ov5647_colorbars_demosaiced_640x480.png`](captures/ov5647_colorbars_demosaiced_640x480.png) with the host reference. |
-| HDMI playback | Started, screen not observed | MM2S status `0x00011000`; output was started through the Zybo HDMI TX path. No TV/capture screenshot was available in this run. |
+| HDMI test pattern | Earlier smoke output photographed by owner | The photo in `captures/zybo_hdmi_tv_colorbars_user_photo.jpeg` shows HDMI test bars on the TV; it does not prove the new overlay or live camera video. |
 | Detector GPIO readback | Passed | JTAG reported frame count 4,991, 76,800 ROI hits, detection asserted, and box x=160…479, y=120…359 on the color-bar pattern. |
 
 | Check | Result | Scope |
@@ -26,17 +40,17 @@ The following results supersede earlier grayscale-only and “no HDMI path start
 | Custom RTL timing summary | WNS +2.763 ns at 100 MHz | Synthesis estimate for the isolated pipeline, not placed-and-routed board timing. |
 | Digilent board-preset block design | Validated | PS7 DDR/ENET0, AXI IIC, two-lane CSI RX, custom RTL, VDMA S2MM/MM2S, PS HP0, VGA VTC, AXI video out and Digilent HDMI TX. |
 | Whole-system synthesis | Passed | Final HDMI-enabled design synthesized with no synthesis errors. |
-| Whole-system place/route | Passed | Bayer/ROI-enabled build routed WNS +0.590 ns; 8,310 LUTs, 13,402 registers, 9 BRAM tiles after route. This is a Vivado timing result; external I/O timing and camera signal integrity still need hardware validation. |
+| Whole-system place/route | Passed | Threshold-192 Bayer/ROI/overlay build routed WNS +0.599 ns; 8,400 LUTs, 13,402 registers, 9 BRAM tiles after route. This is a Vivado timing result; external I/O timing and camera signal integrity still need hardware validation. |
 | Bitstream and handoff | Produced | `build/system/zybo_camera_system.bit` (2,083,866 bytes) and `build/system/zybo_camera_system.xsa` (hardware handoff without embedded bitstream). |
 | DRC | 0 errors | 12 warnings: 3 LUT-equation notices, 8 RAMB36 async-control notices and 1 unroutable-load notice. Review before hardware signoff. |
-| Physical FPGA/DDR/VDMA smoke | Passed register checks | JTAG programmed the FPGA, initialized DDR, downloaded grayscale bars, and started VTC/VDMA MM2S. VDMA status had no transfer error. No display/capture observation yet. |
+| Physical FPGA/DDR/VDMA smoke | Passed register checks | JTAG programmed the FPGA, initialized DDR, downloaded grayscale bars, and started VTC/VDMA MM2S. VDMA status had no transfer error. A photo confirms the earlier HDMI smoke pattern on a TV; live camera-to-TV and the new overlay remain unverified. |
 | OV5647 chip-ID read | **Passed on physical board** | After routing Pcam pin 11/G20 to AXI GPIO and enabling it, AXI IIC at 7-bit address `0x36` returned `0x56`, `0x47` from `0x300A`/`0x300B`. Earlier attempts without the enable returned no bytes. See the [21 October log](hardware_bringup_2026-10-21.md). |
 | Live OV5647 CSI-2 reception | **Passed on physical board** | VGA RAW10 packets and frame-end events observed. VC0 data type was `0x2B`; line payload was 800 bytes. After clearing prior flags, no fresh CSI error bits appeared in the observation window. |
 | OV5647 test-pattern DDR capture | **Passed on physical board** | VDMA S2MM wrote three 640×480 buffers. After clearing startup flags, S2MM status was `0x00011000`, with no error bits. One 307,200-byte frame was dumped by JTAG and visually inspected as a PNG. |
 | OV5647 optical DDR capture | **Passed, dim scene** | With manual 500-line exposure and gain 32, a local 640×480 JTAG dump showed recognizable room geometry and 30 distinct Bayer8 values (range 2–41). Image is not published. |
 | Live OV5647 to HDMI/Ethernet | Partial | OV5647 → DDR and DDR → HDMI streams both ran with clean fresh VDMA status; live detector GPIO values were read over JTAG. The TV panel was not observed during this milestone. Sustained FPS, robust buffer ownership, and Ethernet streaming firmware remain. |
 
-The routed HDMI design uses the local Digilent IP copy in `fpga/ip_repo` and a pixel-clock-synchronized reset. The updated XSA contains the HDMI VTC/TX and detector metrics GPIO; it does not embed the bitstream. The HDMI output uses 640 × 480 timing at a 25 MHz pixel clock (about 59.52 Hz). The Bayer color-bar PNG is reconstructed on the host from the frame dumped from Zybo DDR; it is not a screenshot of HDMI output.
+The routed HDMI design uses the local Digilent IP copy in `fpga/ip_repo` and a pixel-clock-synchronized reset. The updated XSA contains the HDMI VTC/TX and detector metrics GPIO; it does not embed the bitstream. The HDMI output uses 640 × 480 timing at a 25 MHz pixel clock (about 59.52 Hz). The Bayer color-bar PNG is reconstructed on the host from the frame dumped from Zybo DDR; the separate TV photo shows an HDMI smoke pattern, not the camera frame.
 
 The isolated custom RTL synthesis log contains five critical warnings about CSI IP constraint modules not found because the generated receiver IP is **not instantiated** in that isolated top. The whole-system build uses the receiver. The Digilent PS preset also emits negative DDR DQS skew warnings. Neither report establishes memory behavior on the physical board; test DDR before trusting captured frames.
 

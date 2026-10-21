@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
-| Date         : Wed Oct 21 01:12:14 2026
+| Date         : Wed Oct 21 09:49:23 2026
 | Host         : MSI running 64-bit major release  (build 9200)
 | Command      : report_timing_summary -file {C:/Bagas Files/KCCI_local/Technical Training 23 August 2026/RTL Design/zybo-ov5647-high-speed-vision/docs/system_timing.txt}
 | Design       : system_wrapper
@@ -138,7 +138,7 @@ Table of Contents
 
     WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
     -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-      0.251        0.000                      0                30255       -0.167       -1.335                      8                30047        1.520        0.000                       0                 13849  
+      0.251        0.000                      0                33304       -0.167       -1.335                      8                33096        1.520        0.000                       0                 15236  
 
 
 Timing constraints are not met.
@@ -168,7 +168,7 @@ system_i/hdmi_clk/inst/clk_in1  {0.000 10.000}       20.000          50.000
 
 Clock                               WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
 -----                               -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
-clk_fpga_0                           12.512        0.000                      0                21270        0.044        0.000                      0                21205        8.750        0.000                       0                  9450  
+clk_fpga_0                            2.606        0.000                      0                24319        0.044        0.000                      0                24254        8.750        0.000                       0                 10837  
 clk_fpga_1                            0.251        0.000                      0                  382        0.045        0.000                      0                  382        1.520        0.000                       0                   325  
 pcam_hs_clk                                                                                                                                                                       5.190        0.000                       0                     6  
   phy_n_0_1                          21.744        0.000                      0                 1077        0.043        0.000                      0                 1077       12.464        0.000                       0                   539  
@@ -213,7 +213,7 @@ Path Group         From Clock         To Clock               WNS(ns)      TNS(ns
 From Clock:  clk_fpga_0
   To Clock:  clk_fpga_0
 
-Setup :            0  Failing Endpoints,  Worst Slack       12.512ns,  Total Violation        0.000ns
+Setup :            0  Failing Endpoints,  Worst Slack        2.606ns,  Total Violation        0.000ns
 Hold  :            0  Failing Endpoints,  Worst Slack        0.044ns,  Total Violation        0.000ns
 PW    :            0  Failing Endpoints,  Worst Slack        8.750ns,  Total Violation        0.000ns
 ---------------------------------------------------------------------------------------------------
@@ -221,16 +221,16 @@ PW    :            0  Failing Endpoints,  Worst Slack        8.750ns,  Total Vio
 
 Max Delay Paths
 --------------------------------------------------------------------------------------
-Slack (MET) :             12.512ns  (required time - arrival time)
-  Source:                 system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                            (rising edge-triggered cell RAMB36E1 clocked by clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
-  Destination:            system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                            (rising edge-triggered cell RAMB36E1 clocked by clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
+Slack (MET) :             2.606ns  (required time - arrival time)
+  Source:                 system_i/bayer_demosaic/inst/x_reg[1]/C
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
+  Destination:            system_i/bright_roi_detector/inst/detected_last_reg/D
+                            (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
   Path Group:             clk_fpga_0
   Path Type:              Setup (Max at Slow Process Corner)
   Requirement:            20.000ns  (clk_fpga_0 rise@20.000ns - clk_fpga_0 rise@0.000ns)
-  Data Path Delay:        6.597ns  (logic 3.074ns (46.594%)  route 3.523ns (53.406%))
-  Logic Levels:           5  (LUT2=3 LUT5=1 LUT6=1)
+  Data Path Delay:        16.976ns  (logic 5.771ns (33.995%)  route 11.205ns (66.005%))
+  Logic Levels:           23  (CARRY4=7 LUT2=1 LUT3=1 LUT4=2 LUT5=2 LUT6=8 MUXF7=1 RAMS64E=1)
   Clock Path Skew:        -0.145ns (DCD - SCD + CPR)
     Destination Clock Delay (DCD):    1.505ns = ( 21.505 - 20.000 ) 
     Source Clock Delay      (SCD):    1.700ns
@@ -248,23 +248,66 @@ Slack (MET) :             12.512ns  (required time - arrival time)
     PS7_X0Y0             PS7                          0.000     0.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.800     0.800    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.101     0.901 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.800     1.700    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         RAMB36E1                                     r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=10839, unplaced)     0.800     1.700    system_i/bayer_demosaic/inst/aclk
+                         FDRE                                         r  system_i/bayer_demosaic/inst/x_reg[1]/C
   -------------------------------------------------------------------    -------------------
-                         RAMB36E1 (Prop_ramb36e1_CLKARDCLK_DOBDO[8])
-                                                      2.454     4.154 f  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=11, unplaced)        0.800     4.954    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>
-                         LUT2 (Prop_lut2_I1_O)        0.124     5.078 r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>
-                         net (fo=3, unplaced)         0.467     5.545    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>
-                         LUT6 (Prop_lut6_I1_O)        0.124     5.669 f  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>
-                         net (fo=4, unplaced)         0.473     6.142    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>
-                         LUT5 (Prop_lut5_I4_O)        0.124     6.266 r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>
-                         net (fo=8, unplaced)         0.487     6.753    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         LUT2 (Prop_lut2_I0_O)        0.124     6.877 r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=12, unplaced)        0.497     7.374    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         LUT2 (Prop_lut2_I1_O)        0.124     7.498 r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=1, unplaced)         0.800     8.298    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         RAMB36E1                                     r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDRE (Prop_fdre_C_Q)         0.456     2.156 r  system_i/bayer_demosaic/inst/x_reg[1]/Q
+                         net (fo=8, unplaced)         0.508     2.664    system_i/bayer_demosaic/inst/x[1]
+                         LUT2 (Prop_lut2_I0_O)        0.295     2.959 r  system_i/bayer_demosaic/inst/linebuf_reg_0_255_0_0_i_8/O
+                         net (fo=81, unplaced)        1.048     4.007    system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0__0/A1
+                         RAMS64E (Prop_rams64e_ADR1_O)
+                                                      0.281     4.288 f  system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0__0/HIGH/O
+                         net (fo=1, unplaced)         0.000     4.288    system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0__0/O1
+                         MUXF7 (Prop_muxf7_I1_O)      0.247     4.535 f  system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0__0/F7/O
+                         net (fo=1, unplaced)         0.452     4.987    system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0__0_n_0
+                         LUT4 (Prop_lut4_I1_O)        0.298     5.285 f  system_i/bayer_demosaic/inst/upper_left[1]_i_3/O
+                         net (fo=1, unplaced)         0.902     6.187    system_i/bayer_demosaic/inst/upper_left[1]_i_3_n_0
+                         LUT6 (Prop_lut6_I1_O)        0.124     6.311 r  system_i/bayer_demosaic/inst/upper_left[1]_i_2/O
+                         net (fo=7, unplaced)         0.484     6.795    system_i/bayer_demosaic/inst/upper_left[1]_i_2_n_0
+                         LUT6 (Prop_lut6_I2_O)        0.124     6.919 r  system_i/bayer_demosaic/inst/sum_g0__2_carry_i_10/O
+                         net (fo=3, unplaced)         0.467     7.386    system_i/bayer_demosaic/inst/sum_g0__2_carry_i_10_n_0
+                         LUT5 (Prop_lut5_I0_O)        0.124     7.510 r  system_i/bayer_demosaic/inst/sum_g0__2_carry_i_3/O
+                         net (fo=1, unplaced)         0.639     8.149    system_i/bayer_demosaic/inst/sum_g0__2_carry_i_3_n_0
+                         CARRY4 (Prop_carry4_DI[1]_O[2])
+                                                      0.566     8.715 r  system_i/bayer_demosaic/inst/sum_g0__2_carry/O[2]
+                         net (fo=6, unplaced)         0.999     9.714    system_i/bayer_demosaic/inst/sum_g0__2_carry_n_5
+                         LUT6 (Prop_lut6_I2_O)        0.301    10.015 r  system_i/bayer_demosaic/inst/m_axis_tdata[15]_INST_0_i_1/O
+                         net (fo=3, unplaced)         0.467    10.482    system_i/bayer_demosaic/inst/m_axis_tdata[15]_INST_0_i_1_n_0
+                         LUT6 (Prop_lut6_I1_O)        0.124    10.606 r  system_i/bayer_demosaic/inst/m_axis_tdata[13]_INST_0/O
+                         net (fo=4, unplaced)         0.473    11.079    system_i/bright_roi_detector/inst/s_axis_tdata[13]
+                         LUT3 (Prop_lut3_I1_O)        0.124    11.203 r  system_i/bright_roi_detector/inst/luma_sum__1_carry__0_i_1/O
+                         net (fo=1, unplaced)         0.473    11.676    system_i/bright_roi_detector/inst/luma_sum__1_carry__0_i_1_n_0
+                         CARRY4 (Prop_carry4_DI[3]_CO[3])
+                                                      0.396    12.072 r  system_i/bright_roi_detector/inst/luma_sum__1_carry__0/CO[3]
+                         net (fo=1, unplaced)         0.000    12.072    system_i/bright_roi_detector/inst/luma_sum__1_carry__0_n_0
+                         CARRY4 (Prop_carry4_CI_CO[1])
+                                                      0.179    12.251 r  system_i/bright_roi_detector/inst/luma_sum__1_carry__1/CO[1]
+                         net (fo=1, unplaced)         0.611    12.862    system_i/bright_roi_detector/inst/luma_sum[9]
+                         LUT6 (Prop_lut6_I2_O)        0.332    13.194 r  system_i/bright_roi_detector/inst/last_max_x[9]_i_2/O
+                         net (fo=60, unplaced)        0.536    13.730    system_i/bright_roi_detector/inst/p_17_in
+                         LUT5 (Prop_lut5_I2_O)        0.124    13.854 r  system_i/bright_roi_detector/inst/bright_count_last[3]_i_8/O
+                         net (fo=1, unplaced)         0.902    14.756    system_i/bright_roi_detector/inst/bright_count_last[3]_i_8_n_0
+                         LUT6 (Prop_lut6_I3_O)        0.124    14.880 r  system_i/bright_roi_detector/inst/bright_count_last[3]_i_6/O
+                         net (fo=1, unplaced)         0.000    14.880    system_i/bright_roi_detector/inst/bright_count_last[3]_i_6_n_0
+                         CARRY4 (Prop_carry4_S[0]_CO[3])
+                                                      0.513    15.393 r  system_i/bright_roi_detector/inst/bright_count_last_reg[3]_i_1/CO[3]
+                         net (fo=1, unplaced)         0.000    15.393    system_i/bright_roi_detector/inst/bright_count_last_reg[3]_i_1_n_0
+                         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.117    15.510 r  system_i/bright_roi_detector/inst/bright_count_last_reg[7]_i_1/CO[3]
+                         net (fo=1, unplaced)         0.000    15.510    system_i/bright_roi_detector/inst/bright_count_last_reg[7]_i_1_n_0
+                         CARRY4 (Prop_carry4_CI_CO[3])
+                                                      0.117    15.627 r  system_i/bright_roi_detector/inst/bright_count_last_reg[11]_i_1/CO[3]
+                         net (fo=1, unplaced)         0.000    15.627    system_i/bright_roi_detector/inst/bright_count_last_reg[11]_i_1_n_0
+                         CARRY4 (Prop_carry4_CI_O[2])
+                                                      0.256    15.883 r  system_i/bright_roi_detector/inst/bright_count_last_reg[15]_i_1/O[2]
+                         net (fo=3, unplaced)         0.923    16.806    system_i/bright_roi_detector/inst/count_after_pixel[14]
+                         LUT4 (Prop_lut4_I1_O)        0.301    17.107 f  system_i/bright_roi_detector/inst/detected_last_i_5/O
+                         net (fo=1, unplaced)         0.902    18.009    system_i/bright_roi_detector/inst/detected_last_i_5_n_0
+                         LUT6 (Prop_lut6_I2_O)        0.124    18.133 r  system_i/bright_roi_detector/inst/detected_last_i_3/O
+                         net (fo=1, unplaced)         0.419    18.552    system_i/bright_roi_detector/inst/detected_last_i_3_n_0
+                         LUT6 (Prop_lut6_I1_O)        0.124    18.676 r  system_i/bright_roi_detector/inst/detected_last_i_1/O
+                         net (fo=1, unplaced)         0.000    18.676    system_i/bright_roi_detector/inst/detected_last_i_1_n_0
+                         FDRE                                         r  system_i/bright_roi_detector/inst/detected_last_reg/D
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_fpga_0 rise edge)
@@ -272,17 +315,16 @@ Slack (MET) :             12.512ns  (required time - arrival time)
     PS7_X0Y0             PS7                          0.000    20.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.760    20.760    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.091    20.851 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.655    21.505    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         RAMB36E1                                     r  system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=10839, unplaced)     0.655    21.505    system_i/bright_roi_detector/inst/aclk
+                         FDRE                                         r  system_i/bright_roi_detector/inst/detected_last_reg/C
                          clock pessimism              0.050    21.555    
                          clock uncertainty           -0.302    21.253    
-                         RAMB36E1 (Setup_ramb36e1_CLKARDCLK_ENARDEN)
-                                                     -0.443    20.810    system_wrapper/system/system_csi_rx_0/bd_eeba/bd_eeba_rx_0/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDRE (Setup_fdre_C_D)        0.029    21.282    system_i/bright_roi_detector/inst/detected_last_reg
   -------------------------------------------------------------------
-                         required time                         20.810    
-                         arrival time                          -8.298    
+                         required time                         21.282    
+                         arrival time                         -18.676    
   -------------------------------------------------------------------
-                         slack                                 12.512    
+                         slack                                  2.606    
 
 
 
@@ -312,7 +354,7 @@ Slack (MET) :             0.044ns  (arrival time - required time)
     PS7_X0Y0             PS7                          0.000     0.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.337     0.337    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.026     0.363 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.210     0.573    system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/m_axis_mm2s_aclk
+                         net (fo=10839, unplaced)     0.210     0.573    system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/s_axi_lite_aclk
                          FDRE                                         r  system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/sig_dre2ibtt_eop_reg_reg/C
   -------------------------------------------------------------------    -------------------
                          FDRE (Prop_fdre_C_Q)         0.141     0.714 r  system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/sig_dre2ibtt_eop_reg_reg/Q
@@ -325,7 +367,7 @@ Slack (MET) :             0.044ns  (arrival time - required time)
     PS7_X0Y0             PS7                          0.000     0.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.355     0.355    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.029     0.384 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.355     0.739    system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_6_8/WCLK
+                         net (fo=10839, unplaced)     0.355     0.739    system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_6_8/WCLK
                          RAMD32                                       r  system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_6_8/RAMB/CLK
                          clock pessimism             -0.021     0.718    
                          RAMD32 (Hold_ramd32_CLK_I)
@@ -349,8 +391,8 @@ Sources:            { system_i/ps7/inst/PS7_i/FCLKCLK[0] }
 
 Check Type        Corner  Lib Pin             Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location  Pin
 Min Period        n/a     RAMB18E1/CLKARDCLK  n/a            2.944         20.000      17.056               system_i/camera_vdma/U0/GEN_SPRT_FOR_MM2S.MM2S_LINEBUFFER_I/GEN_LINEBUF_NO_SOF.GEN_LINEBUFFER.GEN_SYNC_FIFO.I_LINEBUFFER_FIFO/xpm_fifo_sync_inst/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg/CLKARDCLK
-Low Pulse Width   Slow    RAMD32/CLK          n/a            1.250         10.000      8.750                system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_0_5/RAMA/CLK
-High Pulse Width  Slow    RAMD32/CLK          n/a            1.250         10.000      8.750                system_i/camera_vdma/U0/I_PRMRY_DATAMOVER/GEN_S2MM_FULL.I_S2MM_FULL_WRAPPER/GEN_ENABLE_INDET_BTT_SF.I_INDET_BTT/I_XD_FIFO/NON_BLK_MEM.I_SYNC_FIFOGEN_FIFO/xpm_fifo_base_inst/gen_sdpram.xpm_memory_base_inst/gen_wr_a.gen_word_narrow.mem_reg_0_15_0_5/RAMA/CLK
+Low Pulse Width   Slow    RAMS64E/CLK         n/a            1.250         10.000      8.750                system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0/HIGH/CLK
+High Pulse Width  Slow    RAMS64E/CLK         n/a            1.250         10.000      8.750                system_i/bayer_demosaic/inst/linebuf_reg_0_127_0_0/HIGH/CLK
 
 
 
@@ -730,7 +772,7 @@ Slack (MET) :             34.714ns  (required time - arrival time)
                          (clock clk_out1_system_hdmi_clk_0 rise edge)
                                                       0.000     0.000 r  
                          BUFG                         0.000     0.000 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.800     0.800    system_i/hdmi_clk/inst/clk_in1
+                         net (fo=10839, unplaced)     0.800     0.800    system_i/hdmi_clk/inst/clk_in1
                          MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
                                                      -1.485    -0.685 r  system_i/hdmi_clk/inst/mmcm_adv_inst/CLKOUT0
                          net (fo=1, unplaced)         0.800     0.115    system_i/hdmi_clk/inst/clk_out1_system_hdmi_clk_0
@@ -754,7 +796,7 @@ Slack (MET) :             34.714ns  (required time - arrival time)
                          (clock clk_out1_system_hdmi_clk_0 rise edge)
                                                      40.000    40.000 r  
                          BUFG                         0.000    40.000 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.655    40.655    system_i/hdmi_clk/inst/clk_in1
+                         net (fo=10839, unplaced)     0.655    40.655    system_i/hdmi_clk/inst/clk_in1
                          MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
                                                      -1.290    39.365 r  system_i/hdmi_clk/inst/mmcm_adv_inst/CLKOUT0
                          net (fo=1, unplaced)         0.760    40.125    system_i/hdmi_clk/inst/clk_out1_system_hdmi_clk_0
@@ -796,7 +838,7 @@ Slack (VIOLATED) :        -0.167ns  (arrival time - required time)
                          (clock clk_out1_system_hdmi_clk_0 rise edge)
                                                       0.000     0.000 r  
                          BUFG                         0.000     0.000 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.210     0.210    system_i/hdmi_clk/inst/clk_in1
+                         net (fo=10839, unplaced)     0.210     0.210    system_i/hdmi_clk/inst/clk_in1
                          MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
                                                      -0.477    -0.267 r  system_i/hdmi_clk/inst/mmcm_adv_inst/CLKOUT0
                          net (fo=1, unplaced)         0.337     0.070    system_i/hdmi_clk/inst/clk_out1_system_hdmi_clk_0
@@ -812,7 +854,7 @@ Slack (VIOLATED) :        -0.167ns  (arrival time - required time)
                          (clock clk_out1_system_hdmi_clk_0 rise edge)
                                                       0.000     0.000 r  
                          BUFG                         0.000     0.000 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.355     0.355    system_i/hdmi_clk/inst/clk_in1
+                         net (fo=10839, unplaced)     0.355     0.355    system_i/hdmi_clk/inst/clk_in1
                          MMCME2_ADV (Prop_mmcme2_adv_CLKIN1_CLKOUT0)
                                                      -0.643    -0.288 r  system_i/hdmi_clk/inst/mmcm_adv_inst/CLKOUT0
                          net (fo=1, unplaced)         0.355     0.067    system_i/hdmi_clk/inst/clk_out1_system_hdmi_clk_0
@@ -1078,9 +1120,9 @@ Hold  :            0  Failing Endpoints,  Worst Slack        0.687ns,  Total Vio
 Max Delay Paths
 --------------------------------------------------------------------------------------
 Slack (MET) :             16.794ns  (required time - arrival time)
-  Source:                 system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+  Source:                 system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
                             (rising edge-triggered cell FDRE clocked by clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
-  Destination:            system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+  Destination:            system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
                             (recovery check against rising-edge clock clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
   Path Group:             **async_default**
   Path Type:              Recovery (Max at Slow Process Corner)
@@ -1104,14 +1146,14 @@ Slack (MET) :             16.794ns  (required time - arrival time)
     PS7_X0Y0             PS7                          0.000     0.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.800     0.800    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.101     0.901 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.800     1.700    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         FDRE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=10839, unplaced)     0.800     1.700    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDRE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
   -------------------------------------------------------------------    -------------------
-                         FDRE (Prop_fdre_C_Q)         0.456     2.156 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=2, unplaced)         0.752     2.908    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         LUT3 (Prop_lut3_I0_O)        0.295     3.203 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=32, unplaced)        0.847     4.050    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         FDCE                                         f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDRE (Prop_fdre_C_Q)         0.456     2.156 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=2, unplaced)         0.752     2.908    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         LUT3 (Prop_lut3_I0_O)        0.295     3.203 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=32, unplaced)        0.847     4.050    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDCE                                         f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_fpga_0 rise edge)
@@ -1119,11 +1161,11 @@ Slack (MET) :             16.794ns  (required time - arrival time)
     PS7_X0Y0             PS7                          0.000    20.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.760    20.760    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.091    20.851 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.655    21.505    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         FDCE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=10839, unplaced)     0.655    21.505    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDCE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
                          clock pessimism              0.050    21.555    
                          clock uncertainty           -0.302    21.253    
-                         FDCE (Recov_fdce_C_CLR)     -0.409    20.844    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_16/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDCE (Recov_fdce_C_CLR)     -0.409    20.844    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo/axi_data_fifo_v2_1_36_fifo_gen_59/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
   -------------------------------------------------------------------
                          required time                         20.844    
                          arrival time                          -4.050    
@@ -1137,9 +1179,9 @@ Slack (MET) :             16.794ns  (required time - arrival time)
 Min Delay Paths
 --------------------------------------------------------------------------------------
 Slack (MET) :             0.687ns  (arrival time - required time)
-  Source:                 system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+  Source:                 system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
                             (rising edge-triggered cell FDPE clocked by clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
-  Destination:            system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+  Destination:            system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
                             (removal check against rising-edge clock clk_fpga_0  {rise@0.000ns fall@10.000ns period=20.000ns})
   Path Group:             **async_default**
   Path Type:              Removal (Min at Fast Process Corner)
@@ -1158,14 +1200,14 @@ Slack (MET) :             0.687ns  (arrival time - required time)
     PS7_X0Y0             PS7                          0.000     0.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.337     0.337    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.026     0.363 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.210     0.573    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         FDPE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=10839, unplaced)     0.210     0.573    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDPE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
   -------------------------------------------------------------------    -------------------
-                         FDPE (Prop_fdpe_C_Q)         0.147     0.720 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=2, unplaced)         0.136     0.856    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         LUT3 (Prop_lut3_I2_O)        0.098     0.954 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         net (fo=32, unplaced)        0.357     1.311    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         FDCE                                         f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDPE (Prop_fdpe_C_Q)         0.147     0.720 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=2, unplaced)         0.136     0.856    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         LUT3 (Prop_lut3_I2_O)        0.098     0.954 f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=32, unplaced)        0.357     1.311    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDCE                                         f  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
   -------------------------------------------------------------------    -------------------
 
                          (clock clk_fpga_0 rise edge)
@@ -1173,10 +1215,10 @@ Slack (MET) :             0.687ns  (arrival time - required time)
     PS7_X0Y0             PS7                          0.000     0.000 r  system_i/ps7/inst/PS7_i/FCLKCLK[0]
                          net (fo=1, unplaced)         0.355     0.355    system_i/ps7/inst/FCLK_CLK_unbuffered[0]
                          BUFG (Prop_bufg_I_O)         0.029     0.384 r  system_i/ps7/inst/buffer_fclk_clk_0.FCLK_CLK_0_BUFG/O
-                         net (fo=9452, unplaced)      0.355     0.739    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
-                         FDCE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         net (fo=10839, unplaced)     0.355     0.739    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDCE                                         r  system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
                          clock pessimism             -0.021     0.718    
-                         FDCE (Remov_fdce_C_CLR)     -0.094     0.624    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_7/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
+                         FDCE (Remov_fdce_C_CLR)     -0.094     0.624    system_wrapper/system/system_hp_axi_0/s00_couplers_imp_128P29S/system_hp_axi_imp_auto_pc_0/axi_protocol_converter_v2_1_37_axi_protocol_converter/axi_protocol_converter_v2_1_37_axi3_conv/axi_protocol_converter_v2_1_37_a_axi3_conv/axi_data_fifo_v2_1_36_axic_fifo_50/axi_data_fifo_v2_1_36_fifo_gen/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>/<hidden>
   -------------------------------------------------------------------
                          required time                         -0.624    
                          arrival time                           1.311    

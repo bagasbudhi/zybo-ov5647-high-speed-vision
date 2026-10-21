@@ -1,8 +1,17 @@
 # Configure Raspberry Pi Camera Rev 1.3 / OV5647 for 640x480 RAW10.
 # Register tables in ov5647_vga_regs.tcl are derived from the GPL-2.0 Linux driver.
 # Requires the programmed FPGA, initialized PS, and camera power GPIO high.
+# Default mode is live sensor pixels. Pass "bars" to enable the sensor test pattern.
 set root [file normalize [file join [file dirname [info script]] ..]]
 source [file join [file dirname [info script]] ov5647_vga_regs.tcl]
+set test_pattern 0x00
+if {$argc > 0} {
+    if {[lindex $argv 0] eq "bars"} {
+        set test_pattern 0x80
+    } elseif {[lindex $argv 0] ne "live"} {
+        error "Usage: configure_ov5647_vga_jtag.tcl ?live|bars?"
+    }
+}
 
 proc read_word {address} {
     set response [mrd $address]
@@ -64,13 +73,14 @@ foreach pair {
     incr count
 }
 
-# Sensor-generated color bars isolate CSI link tests from optics and illumination.
-write_sensor 0x503D 0x80
+# Select live sensor image by default; color bars remain available for link tests.
+write_sensor 0x503D $test_pattern
 incr count
 write_sensor 0x0100 0x01
 incr count
 after 100
 puts "OV5647_REGISTER_WRITES=$count"
+puts [format "OV5647_TEST_PATTERN=%s" [expr {$test_pattern == 0 ? "disabled" : "enabled"}]]
 puts [format "CSI_CORE_CONFIG=0x%08X" [read_word 0x43C00000]]
 puts [format "CSI_CORE_STATUS=0x%08X" [read_word 0x43C00010]]
 puts [format "CSI_ISR_AFTER=0x%08X" [read_word 0x43C00024]]

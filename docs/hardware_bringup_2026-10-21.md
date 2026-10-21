@@ -74,3 +74,9 @@ python host/raw8_to_png.py build/capture/ov5647_optical_local_640x480.raw build/
 ## Next gate
 
 Improve optical exposure, then measure sustained frame rate and errors. Ethernet video firmware and the Python laptop viewer remain to be integrated. No HDMI cable is connected or needed for JTAG/DDR capture checks.
+
+## Threshold-192 red-box update
+
+After the earlier camera and color-bar checks, the detector gained a two-pixel red bounding-box overlay. A private natural-light Bayer frame was evaluated offline against the host demosaic reference; threshold 192 produced 552 ROI hits and bounds x=296..380, y=180..286. This capture is excluded from the repository. Auto exposure and gain were enabled through `fpga/set_ov5647_live_controls_jtag.tcl`; the sensor test pattern was set off.
+
+Vivado 2025.2 completed routing and bitstream generation for this change: WNS +0.599 ns, zero failing setup endpoints, 8,400 LUTs, 13,402 registers, and 9 BRAM tiles. The owner supplied a photo of the HDMI test pattern on a TV from the previous smoke build. A fresh attempt to program and initialize the updated design could not proceed because the JTAG ARM/DAP target was not responding. Therefore, the new red outline and threshold result are simulation/build/local-capture validated, but not yet visually confirmed on the TV.
