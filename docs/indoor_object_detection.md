@@ -11,10 +11,10 @@ This detects objects within a room; it does not classify a whole scene as a clas
 ```text
 OV5647 -> CSI-2 -> Bayer8 -> DDR/VDMA -> HDMI
                                   |
-                                  +-> captured Bayer8 frame -> laptop demosaic -> YOLO11n -> boxes + CSV
+                                  +-> Zynq UDP over Ethernet -> laptop demosaic -> YOLO11n -> boxes + CSV
 ```
 
-Neural inference runs on the laptop CPU by default. It is separate from the FPGA threshold detector and is not in the current bitstream. Ethernet frame transport is not implemented. A Bayer8 frame can currently be acquired through the JTAG dump flow; an image, video, or webcam can also be passed directly to the detector.
+Neural inference runs on the laptop CPU by default. It is separate from the FPGA threshold detector and is not in the current bitstream. Live Bayer8 frames can be received from the Zybo over Ethernet with [`host/zybo_live_detect.py`](../host/zybo_live_detect.py); see the [measured live-stream run](live_ethernet_detection.md). A single Bayer8 frame can also be acquired through the JTAG dump flow; an image, video, or webcam can be passed directly to this offline detector.
 
 ## Setup and inference
 
@@ -50,4 +50,4 @@ The best checkpoint scored precision 0.545, recall 0.505, mAP@0.5 0.520, and mAP
 
 A held-out HomeObjects image (`living_room_10.jpg`) produced 4 detections: 2 potted plants, 1 sofa, and 1 table. Model inference took about 29 ms for that image. An earlier local OV5647 Bayer8 capture was processed offline and produced one photo-frame detection, also at about 29 ms model inference. That camera capture has no object annotations, so this is a functional smoke check, not an accuracy measurement or fresh live camera-to-viewer demonstration. A separate public Ultralytics `bus.jpg` smoke inference using the COCO checkpoint detected 4 people (confidence 0.62–0.89); CPU inference was about 56 ms. Cold end-to-end timings include model startup and do not represent sustained video FPS.
 
-This project demonstrates laptop-side AI alongside FPGA camera-interface and threshold/count/bounding-box RTL. It does not demonstrate neural inference on the XC7Z010 or Ethernet streaming. The camera-to-TV live path still needs a fresh end-to-end demonstration. Do not claim automotive qualification or safety performance. HomeObjects-3K and Ultralytics are marked AGPL-3.0; review their license terms before redistributing model weights or using the work in a closed-source product. The repository does not include the downloaded data or model weights.
+This project demonstrates laptop-side AI alongside FPGA camera-interface and threshold/count/bounding-box RTL. It does not demonstrate neural inference on the XC7Z010. Live camera-to-laptop Ethernet streaming has been measured; the camera-to-TV live path and red-box overlay still need a visually confirmed end-to-end demonstration. Do not claim automotive qualification or safety performance. HomeObjects-3K and Ultralytics are marked AGPL-3.0; review their license terms before redistributing model weights or using the work in a closed-source product. The repository does not include the downloaded data or model weights.

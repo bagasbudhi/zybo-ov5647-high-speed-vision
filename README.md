@@ -4,7 +4,7 @@
 
 The current checked-in build sets the bright-pixel threshold to 192 and draws a two-pixel red outline around the previous completed frame's bounding box. The outline appears one frame later because the detector latches coordinates at frame end. The RTL simulation passes; Vivado 2025.2 routed the updated system with WNS +0.599 ns, 8,400 LUTs, 13,402 registers, 9 BRAM tiles, and zero DRC errors. The matching bitstream and XSA are in `artifacts/`.
 
-The owner supplied a photo of the Zybo HDMI test pattern displayed on a TV. A separate local-only optical capture gave 552 threshold hits and a box at x=296..380, y=180..286 for threshold 192. That capture was used only to choose the initial threshold and is not included in this repository. The threshold-192 build has not yet been confirmed on the physical board: the latest JTAG attempt found the FPGA but the Zynq ARM/DAP target did not respond. See [current limitations](docs/test_results.md).
+The owner supplied a photo of the Zybo HDMI test pattern displayed on a TV. A separate local-only optical capture gave 552 threshold hits and a box at x=296..380, y=180..286 for threshold 192. That capture was used only to choose the initial threshold and is not included in this repository. A later JTAG run loaded the current bitstream and streamed live camera frames to the laptop. The threshold-192 red-box overlay has still not been visually verified on the TV. See [verification results](docs/test_results.md).
 
 This portfolio project receives VGA RAW10 from a Raspberry Pi Camera Rev 1.3 / OV5647 over two lane MIPI CSI-2, converts it to Bayer8, writes frames to DDR with AXI VDMA, then reads them through custom Bayer-to-RGB and bright-region RTL before HDMI TX.
 
@@ -21,7 +21,7 @@ The image is reconstructed on the laptop from the board's DDR Bayer8 frame dump 
 
 ## Live camera measurements
 
-A previous physical-board run with the OV5647 test pattern disabled and auto exposure/gain enabled recorded 7,351 completed frames. At the old threshold of 32, the detector counted 67,427 hits of 76,800 ROI pixels (87.8%) and returned the entire ROI as its box. This is a successful live sensor/CSI/DDR/metric run, but the threshold was too permissive for useful localization. A private Bayer capture evaluated offline at threshold 192 yielded 552 hits and box x=296..380, y=180..286; this is not yet a hardware measurement. The current JTAG session can see the FPGA but cannot access the Zynq ARM/DAP processor, so the new threshold-192 build has not been freshly verified on the board.
+A previous physical-board run with the OV5647 test pattern disabled and auto exposure/gain enabled recorded 7,351 completed frames. At the old threshold of 32, the detector counted 67,427 hits of 76,800 ROI pixels (87.8%) and returned the entire ROI as its box. This is a successful live sensor/CSI/DDR/metric run, but the threshold was too permissive for useful localization. A private Bayer capture evaluated offline at threshold 192 yielded 552 hits and box x=296..380, y=180..286; this is not yet an FPGA detector measurement. The temporary ARM/DAP access fault was resolved after a board restart. The current bitstream has streamed live camera frames over Ethernet, while the threshold-192 detector overlay still lacks a confirmed TV image.
 
 Use `fpga/run_live_vision_demo_jtag.tcl` to program and start the live path, then save 10 seconds of frame and detector metrics to ignored `build/capture/live_vision_metrics.csv`. It requires working PS/ARM JTAG and DDR initialization.
 
@@ -84,7 +84,7 @@ Useful scripts:
   python host\bayer8_to_rgb.py build\capture\ov5647_colorbars_640x480.raw docs\captures\frame.png --phase BG
   ```
 
-The owner confirmed the earlier color-bar output on a TV connected to Zybo HDMI OUT. The red-box threshold-192 build is ready in `artifacts/`; its on-board display still needs a fresh JTAG run. A laptop HDMI connector is commonly output-only; a USB HDMI capture device is required to view Zybo HDMI on such a laptop.
+The owner confirmed the earlier color-bar output on a TV connected to Zybo HDMI OUT. The red-box threshold-192 build is in `artifacts/` and has been loaded over JTAG, but its overlay has not been visually confirmed on the TV. The owner reported a glitchy TV image; a new TV photo is needed to diagnose it. A laptop HDMI connector is commonly output-only; a USB HDMI capture device is required to view Zybo HDMI on such a laptop.
 
 ## Neural-network patch detector experiment
 
@@ -96,7 +96,9 @@ An actual indoor object detector is included separately from that synthetic RTL 
 
 ## Live Ethernet to laptop YOLO
 
-`host/zybo_live_detect.py` receives Bayer8 frames from Zybo UDP port 5005, demosaics each frame, and runs the trained YOLO model on the laptop. `fpga/start_ethernet_stream_jtag.tcl` configures the camera and starts the Zynq sender. A physical OV5647-to-laptop run reconstructed 45 frames from 9,901 packets in 10 seconds with zero dropped or bad frames; the end-to-end viewer averaged 4.43 FPS including model warm-up. Its boxes show class and confidence, with some visible false positives. See the [live-stream instructions, measured evidence, and camera image](docs/live_ethernet_detection.md). Ethernet works without HDMI attached to the laptop.
+`host/zybo_live_detect.py` receives Bayer8 frames from Zybo UDP port 5005, demosaics each frame, and runs the trained YOLO model on the laptop. `fpga/start_ethernet_stream_jtag.tcl` configures the camera and starts the Zynq sender. A physical OV5647-to-laptop run reconstructed 45 frames from 9,901 packets in 10 seconds with zero dropped or bad frames; the end-to-end viewer averaged 4.43 FPS including model warm-up. The [live-stream evidence](docs/live_ethernet_detection.md) includes annotated lamp, table, and chair prediction frames. Only the lamp box is visually plausible; the table and chair examples remain unverified. Ethernet works without HDMI attached to the laptop.
+
+![Live OV5647 Ethernet frame with a laptop-side lamp prediction](docs/images/live_ov5647_lamp_detection.jpg)
 
 ## Portfolio framing
 

@@ -1,6 +1,19 @@
 # Verification results through 21 October 2026
 
-## Latest overlay build (21 October 2026)
+## Latest physical camera and Ethernet check (21 October 2026)
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| JTAG/ARM access | Recovered | After board restart, the current bitstream, PS/DDR setup, OV5647 configuration, and Ethernet sender were loaded and started. The prior ARM/DAP access fault was temporary. |
+| OV5647 CSI-2 reception | Passed | The CSI packet counter advanced during live sensor output. |
+| VDMA capture and HDMI read status | Running | Fresh S2MM and MM2S status read `0x00011000`; this register check alone does not prove a correct TV image. |
+| Live Ethernet frame transport | Passed | A 10-second room-view run reconstructed 45 complete 640x480 Bayer8 frames from 9,901 packets, with zero dropped frames and zero bad packets. |
+| Laptop YOLO inference | Functional, accuracy unverified | The second room-view run emitted 44 boxes over 45 frames. A `lamp 0.31` box is visually plausible; `table 0.65` and `chair 0.36` examples are ambiguous. See [annotated frames](live_ethernet_detection.md). |
+| Live camera on TV and red-box overlay | Unverified | The owner reported a glitchy TV image; no current TV photo has been inspected. Do not claim a verified live HDMI image or threshold-192 overlay. |
+
+The sections below retain historical build and bring-up results. Their earlier statements about JTAG or Ethernet availability are superseded by the physical check above.
+
+## Earlier overlay build checks (21 October 2026)
 
 | Check | Result | Scope |
 | --- | --- | --- |
@@ -14,7 +27,7 @@
 | TV color bars | Owner confirmed | Earlier HDMI TX run displayed color bars on the connected TV. |
 | Standalone NN RTL | Passed simulation and synthesis | XSim passed; synthesis-only utilization is 424 LUTs, 298 registers, 0 DSP, 0 BRAM on XC7Z010. Not integrated into the camera system. |
 | NN synthetic holdout | 997/1,000 correct | 497/500 centered targets and 500/500 negatives at score threshold 0.88; generated data only. |
-| Updated physical-board check | Incomplete | JTAG sees `xc7z010`, but the ARM/DAP target returns AHB AP transaction errors. The one-command live capture/CSV script is `fpga/run_live_vision_demo_jtag.tcl`; the new threshold-192 overlay is not claimed as TV-verified. |
+| Physical-board check at that time | Incomplete | JTAG saw `xc7z010`, but the ARM/DAP target returned AHB AP transaction errors. That temporary access fault was resolved in the later check above; the threshold-192 overlay remains unverified on TV. |
 
 
 ## Earlier threshold-32 camera and HDMI checks (historical)
@@ -28,7 +41,7 @@ The following results supersede earlier grayscale-only and “no HDMI path start
 | Bayer demosaic + ROI detector XSim | Passed | Four CFA phases, constant RGB reconstruction in the interior, AXI sidebands, downstream stalls, bright-pixel count, bounding box, and malformed frame. |
 | Host Bayer PNG/reference tests | 3 passed | Four CFA phase patterns, frame-size validation, and PNG output; all seven host tests pass including existing UDP protocol tests and the tiny MLP tests. |
 | Current routed design | Passed | Vivado 2025.2 threshold-192 build; WNS +0.599 ns, no failing setup endpoints; 8,400 LUTs, 13,402 registers, 9 BRAM tiles. |
-| Current bitstream/XSA | Produced, not freshly installed | Bitstream and regenerated XSA include demosaic, detector, red box and metrics GPIO. The latest JTAG attempt failed at ARM/DAP initialization. |
+| Bitstream/XSA at earlier attempt | Produced, not installed during that attempt | Bitstream and regenerated XSA include demosaic, detector, red box and metrics GPIO. ARM/DAP initialization failed in that earlier session; later JTAG access recovered. |
 | OV5647 color-bar frame | Captured | Sensor color-bar mode, CSI packet counter advanced, S2MM status `0x00011000`, 307,200-byte Bayer8 buffer read from DDR over JTAG, and rendered to [`ov5647_colorbars_demosaiced_640x480.png`](captures/ov5647_colorbars_demosaiced_640x480.png) with the host reference. |
 | HDMI test pattern | Earlier smoke output photographed by owner | The photo in `captures/zybo_hdmi_tv_colorbars_user_photo.jpeg` shows HDMI test bars on the TV; it does not prove the new overlay or live camera video. |
 | Detector GPIO readback | Passed | JTAG reported frame count 4,991, 76,800 ROI hits, detection asserted, and box x=160…479, y=120…359 on the color-bar pattern. |
@@ -53,7 +66,7 @@ The following results supersede earlier grayscale-only and “no HDMI path start
 | Live OV5647 CSI-2 reception | **Passed on physical board** | VGA RAW10 packets and frame-end events observed. VC0 data type was `0x2B`; line payload was 800 bytes. After clearing prior flags, no fresh CSI error bits appeared in the observation window. |
 | OV5647 test-pattern DDR capture | **Passed on physical board** | VDMA S2MM wrote three 640×480 buffers. After clearing startup flags, S2MM status was `0x00011000`, with no error bits. One 307,200-byte frame was dumped by JTAG and visually inspected as a PNG. |
 | OV5647 optical DDR capture | **Passed, dim scene** | With manual 500-line exposure and gain 32, a local 640×480 JTAG dump showed recognizable room geometry and 30 distinct Bayer8 values (range 2–41). Image is not published. |
-| Live OV5647 to HDMI/Ethernet | Partial | OV5647 → DDR and DDR → HDMI streams both ran with clean fresh VDMA status; live detector GPIO values were read over JTAG. The TV panel was not observed during this milestone. Sustained FPS, robust buffer ownership, and Ethernet streaming firmware remain. |
+| Earlier live OV5647 to HDMI | Partial at that time | OV5647 → DDR and DDR → HDMI streams ran with clean fresh VDMA status; live detector GPIO values were read over JTAG. The TV panel was not observed during that milestone. The later Ethernet run is reported at the top of this page; HDMI image quality and robust buffer ownership remain open. |
 
 The routed HDMI design uses the local Digilent IP copy in `fpga/ip_repo` and a pixel-clock-synchronized reset. The updated XSA contains the HDMI VTC/TX and detector metrics GPIO; it does not embed the bitstream. The HDMI output uses 640 × 480 timing at a 25 MHz pixel clock (about 59.52 Hz). The Bayer color-bar PNG is reconstructed on the host from the frame dumped from Zybo DDR; the separate TV photo shows an HDMI smoke pattern, not the camera frame.
 
