@@ -6,7 +6,8 @@ set bitfile [file join $root artifacts zybo_camera_system.bit]
 set xsa [file join $root artifacts zybo_camera_system.xsa]
 set elf [file join $root build ethernet_stream.elf]
 set ps_init [file join $root build jtag ps7_init.tcl]
-foreach f [list $bitfile $xsa $elf $ps_init] {
+set bars [file join $root build jtag hdmi_bars_640x480.bin]
+foreach f [list $bitfile $xsa $elf $ps_init $bars] {
     if {![file exists $f]} {error "Required build file missing: $f"}
 }
 
@@ -28,6 +29,19 @@ loadhw $xsa
 source $ps_init
 ps7_init
 ps7_post_config
+
+# The video pipeline reset is synchronized to the HDMI pixel clock. Start VTC
+# and a known DDR frame first, even when HDMI is not connected to a display.
+dow -data $bars 0x10000000
+mwr 0x43C10000 0x01ffff07
+mwr 0x43000000 0x00000003
+mwr 0x4300005C 0x10000000
+mwr 0x43000060 0x10000000
+mwr 0x43000064 0x10000000
+mwr 0x43000058 640
+mwr 0x43000054 640
+mwr 0x43000050 480
+after 100
 disconnect
 
 # Camera power-enable and OV5647 live VGA RAW10 setup through PS IIC.
@@ -46,5 +60,13 @@ targets -set -filter {name =~ "ARM Cortex-A9 MPCore #0"}
 loadhw $xsa
 dow $elf
 con
+after 500
+# Display the camera buffers on HDMI after the S2MM capture channel has started.
+mwr 0x4300005C 0x11000000
+mwr 0x43000060 0x11080000
+mwr 0x43000064 0x11100000
+mwr 0x43000058 640
+mwr 0x43000054 640
+mwr 0x43000050 480
 puts "ZCAM_ETHERNET_SENDER_RUNNING board_ip=169.254.80.26 udp_port=5005"
 disconnect
