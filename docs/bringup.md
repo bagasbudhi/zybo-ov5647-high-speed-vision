@@ -1,5 +1,7 @@
 # Board bring-up and remaining software
 
+This page records earlier bring-up work. For the current prerequisites and working camera-to-Ethernet procedure, use [getting started](getting_started.md); later verification results supersede older statements here about Ethernet being unfinished.
+
 The first physical session is recorded in [hardware_bringup_2026-10-20.md](hardware_bringup_2026-10-20.md). The [21 October bring-up](hardware_bringup_2026-10-21.md) added Pcam pin-11 camera power enable, read OV5647 chip ID `0x5647`, and confirmed VGA RAW10 CSI-2 packets. The current milestone adds Bayer-to-RGB and ROI RTL, then captures a color-bar frame from DDR over JTAG. HDMI playback was started; visual confirmation on the TV is still needed. A USB HDMI capture device is needed to view Zybo HDMI on a laptop whose HDMI connector is output-only.
 
 ## What exists now

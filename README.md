@@ -1,5 +1,7 @@
 # Zybo Z7-10 OV5647 Bayer vision demo
 
+**Start here:** [hardware prerequisites, the owner's OV5647 camera photo, cable connection, and step-by-step Ethernet viewer setup](docs/getting_started.md). The guide distinguishes the measured laptop stream from the HDMI output that still needs visual debugging.
+
 ## Latest build update (21 October 2026)
 
 The current checked-in build sets the bright-pixel threshold to 192 and draws a two-pixel red outline around the previous completed frame's bounding box. The outline appears one frame later because the detector latches coordinates at frame end. The RTL simulation passes; Vivado 2025.2 routed the updated system with WNS +0.599 ns, 8,400 LUTs, 13,402 registers, 9 BRAM tiles, and zero DRC errors. The matching bitstream and XSA are in `artifacts/`.
