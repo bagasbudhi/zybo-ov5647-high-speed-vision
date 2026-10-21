@@ -12,6 +12,8 @@ add_files -norecurse [list [file join $root rtl axis_frame_monitor.sv]]
 add_files -norecurse [list [file join $root rtl axis_raw10_to_bayer8.sv]]
 add_files -norecurse [list [file join $root rtl axis_vision_pipeline.v]]
 add_files -norecurse [list [file join $root rtl axis_gray_to_rgb.v]]
+add_files -norecurse [list [file join $root rtl axis_bayer_demosaic.v]]
+add_files -norecurse [list [file join $root rtl axis_bright_roi_detector.v]]
 create_bd_design system
 set ps7 [create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 ps7]
 apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
@@ -46,6 +48,17 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
   -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins camera_iic/S_AXI]
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
   -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins camera_power/S_AXI]
+# Frame-level detection metrics and bounding box are processor-readable GPIO inputs.
+set vision_metrics [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 vision_metrics]
+set_property -dict [list CONFIG.C_IS_DUAL {1} CONFIG.C_GPIO_WIDTH {32} \
+  CONFIG.C_ALL_INPUTS {1} CONFIG.C_GPIO2_WIDTH {32} CONFIG.C_ALL_INPUTS_2 {1}] $vision_metrics
+set vision_y_metrics [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 vision_y_metrics]
+set_property -dict [list CONFIG.C_IS_DUAL {1} CONFIG.C_GPIO_WIDTH {32} \
+  CONFIG.C_ALL_INPUTS {1} CONFIG.C_GPIO2_WIDTH {32} CONFIG.C_ALL_INPUTS_2 {1}] $vision_y_metrics
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
+  -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins vision_metrics/S_AXI]
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 \
+  -config {Master "/ps7/M_AXI_GP0" Clk "Auto"} [get_bd_intf_pins vision_y_metrics/S_AXI]
 puts "HP_PINS=[get_bd_intf_pins ps7/*HP*]"
 puts "VDMA_PINS=[get_bd_intf_pins camera_vdma/*]"
 set hp_axi [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 hp_axi]
@@ -88,15 +101,23 @@ connect_bd_net [get_bd_pins ps7/FCLK_CLK0] [get_bd_pins pack_pixels/aclk]
 connect_bd_net [get_bd_pins rst_ps7_50M/peripheral_aresetn] [get_bd_pins pack_pixels/aresetn]
 make_bd_intf_pins_external [get_bd_intf_pins csi_rx/mipi_phy_if]
 
-# DDR frame playback to HDMI OUT. VDMA read data is one luma byte per pixel;
-# RGB expansion preserves the frame-start and end-of-line stream markers.
-set gray_rgb [create_bd_cell -type module -reference axis_gray_to_rgb gray_to_rgb]
-connect_bd_intf_net [get_bd_intf_pins camera_vdma/M_AXIS_MM2S] [get_bd_intf_pins gray_to_rgb/s_axis]
+# DDR frame playback returns Bayer8 samples. Reconstruct RGB and count bright
+# pixels in a central ROI before sending the stream to HDMI OUT.
+set demosaic [create_bd_cell -type module -reference axis_bayer_demosaic bayer_demosaic]
+connect_bd_intf_net [get_bd_intf_pins camera_vdma/M_AXIS_MM2S] [get_bd_intf_pins bayer_demosaic/s_axis]
+set detector [create_bd_cell -type module -reference axis_bright_roi_detector bright_roi_detector]
+set_property -dict [list CONFIG.ROI_X0 {160} CONFIG.ROI_Y0 {120} \
+  CONFIG.ROI_X1 {479} CONFIG.ROI_Y1 {359} CONFIG.LUMA_THRESHOLD {32}] $detector
+connect_bd_intf_net [get_bd_intf_pins bayer_demosaic/m_axis] [get_bd_intf_pins bright_roi_detector/s_axis]
 set video_out [create_bd_cell -type ip -vlnv xilinx.com:ip:v_axi4s_vid_out:4.0 video_out]
 set_property -dict [list CONFIG.C_HAS_ASYNC_CLK {1} CONFIG.C_VTG_MASTER_SLAVE {1}] $video_out
-connect_bd_intf_net [get_bd_intf_pins gray_to_rgb/m_axis] [get_bd_intf_pins video_out/video_in]
-connect_bd_net [get_bd_pins ps7/FCLK_CLK0] [get_bd_pins {gray_to_rgb/aclk video_out/aclk}]
-connect_bd_net [get_bd_pins rst_ps7_50M/peripheral_aresetn] [get_bd_pins {gray_to_rgb/aresetn video_out/aresetn}]
+connect_bd_intf_net [get_bd_intf_pins bright_roi_detector/m_axis] [get_bd_intf_pins video_out/video_in]
+connect_bd_net [get_bd_pins ps7/FCLK_CLK0] [get_bd_pins {bayer_demosaic/aclk bright_roi_detector/aclk video_out/aclk}]
+connect_bd_net [get_bd_pins rst_ps7_50M/peripheral_aresetn] [get_bd_pins {bayer_demosaic/aresetn bright_roi_detector/aresetn video_out/aresetn}]
+connect_bd_net [get_bd_pins bright_roi_detector/bright_count_last] [get_bd_pins vision_metrics/gpio_io_i]
+connect_bd_net [get_bd_pins bright_roi_detector/bbox_x_pair] [get_bd_pins vision_metrics/gpio2_io_i]
+connect_bd_net [get_bd_pins bright_roi_detector/bbox_y_pair] [get_bd_pins vision_y_metrics/gpio_io_i]
+connect_bd_net [get_bd_pins bright_roi_detector/frame_count] [get_bd_pins vision_y_metrics/gpio2_io_i]
 set vtc [create_bd_cell -type ip -vlnv xilinx.com:ip:v_tc:6.2 hdmi_vtc]
 set_property -dict [list CONFIG.enable_detection {false} CONFIG.enable_generation {true} \
   CONFIG.VIDEO_MODE {Custom} \
@@ -128,6 +149,7 @@ connect_bd_net [get_bd_pins pixel_reset/peripheral_aresetn] \
   [get_bd_pins {hdmi_tx/aRst_n hdmi_vtc/resetn video_out/vid_io_out_resetn}]
 make_bd_intf_pins_external [get_bd_intf_pins hdmi_tx/TMDS]
 set_property name hdmi_out [get_bd_intf_ports TMDS_0]
+assign_bd_address
 validate_bd_design
 save_bd_design
 set bd_file [get_files system.bd]

@@ -1,131 +1,73 @@
-# Zybo Z7-10 high speed camera interface portfolio project
+# Zybo Z7-10 OV5647 Bayer vision demo
 
-**Status (21 October 2026):** The Z7-10 CSI-2 to custom RTL to DDR frame buffer to HDMI OUT hardware system was rebuilt with a software-controlled Camera Rev 1.3 power-enable output. Routed WNS is +0.376 ns; DRC reports no errors and 12 warnings. **Camera capture through DDR now works on hardware:** enabling Pcam pin 11 returned OV5647 chip ID `0x5647`; a 640×480 RAW10 mode produced increasing CSI packet counts, frame-end events, and 800-byte lines. VDMA wrote complete sensor color-bar and optical frames to DDR; both were dumped over JTAG and viewed as PNGs on the laptop. The optical frame is dim and kept local. Sustained FPS, visible HDMI output, and Ethernet streaming are not yet demonstrated. No HDMI cable is currently connected. The MSI Bravo 15 C7VFK laptop has HDMI output only, so later HDMI viewing needs an external monitor or USB capture device. Ethernet firmware remains unimplemented.
+This portfolio project receives VGA RAW10 from a Raspberry Pi Camera Rev 1.3 / OV5647 over two lane MIPI CSI-2, converts it to Bayer8, writes frames to DDR with AXI VDMA, then reads them through custom Bayer-to-RGB and bright-region RTL before HDMI TX.
 
-Start with [the verified results](docs/test_results.md), [the camera, CSI, and DDR bring-up](docs/hardware_bringup_2026-10-21.md), [a captured camera test frame](docs/captures/ov5647_colorbars_640x480.png), [OV5647 datasheet checks](docs/ov5647_datasheet_notes.md), and [board bring-up steps](docs/bringup.md). The checked-in bitstream and Vitis handoff are `artifacts/zybo_camera_system.bit` and `artifacts/zybo_camera_system.xsa`. FPGA programming, DDR test-frame download, sensor chip-ID read, CSI packet reception, and one DDR camera frame dump were validated on the board. The generated Vivado project is `build/system/zybo_camera_system.xpr`. `fpga/build_system.tcl` recreates the hardware design and bitstream; `fpga/export_xsa.tcl` recreates the XSA. The smaller `fpga/build.tcl` builds the isolated custom RTL and CSI IP for inspection and comparison.
+**Milestone status (21 October 2026):** Vivado 2025.2 rebuilt and routed the XC7Z010 design. The new FPGA image was programmed over JTAG; OV5647 640×480 color-bar capture and HDMI playback were started; the CSI packet counter advanced; fresh S2MM and MM2S status were both `0x00011000`. A 307,200-byte Bayer8 frame was dumped from DDR over JTAG and reconstructed as the shareable RGB PNG below. Detector readback over JTAG reported 76,800 bright pixels in the center ROI and a bounding box spanning x=160…479, y=120…359. The HDMI signal was not visually inspected at the TV during this build.
 
-Build a demonstrable path from the OV5647 two lane MIPI CSI-2 camera on a Zybo Z7-10 to a display or laptop application. The FPGA fabric owns camera reception, frame accounting, a small real-time vision block, DDR frame buffering, and HDMI video output. The Zynq processor must configure the sensor and VDMA. Ethernet transport and the Python UDP viewer need additional board firmware.
+![OV5647 Bayer capture reconstructed to RGB](docs/captures/ov5647_colorbars_demosaiced_640x480.png)
 
-## Why this project
+The image is reconstructed on the laptop from the board's DDR Bayer8 frame dump using the repository's Python reference for the same causal interpolation used in RTL. It demonstrates camera reception, DDR capture, and the Bayer interpretation; it is not a TV/HDMI screenshot. The test image was made with the sensor's color-bar pattern enabled. The JTAG raw dump stays under ignored `build/capture/` and is not committed.
 
-The project demonstrates high speed serial reception, AXI4-Stream video, clock domain crossing, backpressure and loss handling, memory transfer, hardware and software integration, verification, and measured throughput. A parameterized RTL edge or motion metric supplies a clear, independently tested contribution. These are relevant skills for automotive camera/ADAS SoC work. For a V2X focused role, document that this is an interface and verification portfolio piece, not a V2X modem.
-
-## Physical connections and laptop viewing
+## Hardware path
 
 ```text
-OV5647 module -- 15-pin ribbon / 2-lane CSI-2 --> Zybo Pcam port
-Zybo HDMI OUT -- HDMI cable --> external monitor or USB HDMI capture device --> laptop
-Zybo USB JTAG/UART -- USB --> laptop Vivado programming and logs
-Zybo Ethernet -- cable / LAN --> laptop Python receiver (after board UDP firmware is built)
+OV5647 RAW10 → MIPI CSI-2 RX → RAW10/Bayer8 + frame monitor → AXI VDMA S2MM → DDR
+                                                                                ↓
+HDMI OUT ← rgb2dvi ← Video Out/VTC ← ROI detector ← Bayer-to-RGB ← AXI VDMA MM2S
 ```
 
-Use the Zybo's **HDMI OUT** for a monitor or USB HDMI capture device. The MSI Bravo 15 C7VFK laptop's built-in HDMI port is an output, so a direct HDMI cable cannot display the Zybo signal there. The Python UDP viewer receives frames over Ethernet after PS Ethernet firmware is implemented; it does not capture HDMI.
+The MIPI physical receiver and CSI-2 packet receiver use AMD IP. The custom RTL contribution performs stream demosaicing, frame checks, bright-pixel counting, and bounding-box tracking.
 
-For current hardware diagnostics, `fpga/dump_vga_frame_jtag.tcl` reads one stopped DDR frame over the USB JTAG connection and `host/raw8_to_png.py` makes a viewable PNG. This is a single-frame capture, not live streaming, and needs no HDMI cable.
+### Bayer-to-RGB
 
-## Baseline architecture
+`rtl/axis_bayer_demosaic.v` defaults to BGGR. It uses the current, left, upper, and upper-left Bayer samples to estimate missing channels, averages available samples of each color, and uses the current sample at borders where a channel is unavailable. This is a compact causal approximation that needs one 8-bit line buffer and preserves AXI ready/valid and SOF/EOL sidebands. It is not a full symmetric bilinear filter. The current capture path discards the low two bits of RAW10 when forming Bayer8.
 
-```text
-OV5647 RAW10, 2 CSI-2 lanes
-  -> AMD MIPI D-PHY / CSI-2 RX IP, if supported by installed Vivado and Z7-10
-  -> AXI4-Stream video (record exact packing, SOF, EOL and clock)
-  -> custom RTL frame monitor + optional streaming edge/motion metric
-  -> AXI VDMA write -> PS DDR frame buffers -> AXI VDMA read
-  -> Bayer8 luma-to-RGB888 RTL -> AXI4-Stream to Video Out + VTC
-  -> Digilent rgb2dvi IP -> Zybo HDMI OUT -> monitor or USB HDMI capture
+### Measurable detection
 
-Zynq ARM software is still required for sensor I2C, CSI control, and both VDMA channels. Ethernet and Python are optional diagnostics. The initial HDMI image is grayscale Bayer samples; color demosaicing is a later enhancement.
-```
+`rtl/axis_bright_roi_detector.v` passes RGB through and computes luma as `(R + 2G + B) / 4`. It counts pixels at or above 32 in the central 320×240 region (x=160…479, y=120…359) and latches the count and bounding box at the end of each valid 640×480 frame. Metrics are connected to AXI GPIO for PS readback. The RTL behavior is simulated; GPIO metric readback was not confirmed over JTAG in this run.
 
-Keep the MIPI analog PHY and CSI-2 packet receiver as vendor IP. The portfolio RTL should be the stream processing and observability logic, written and verified by the project. Do not claim a hand-written PHY. If the installed IP is unavailable, unlicensed, does not implement on XC7Z010, or fails resource/timing gates, pause that hardware branch and document the result; do not silently switch to a Z7-20 design or claim camera reception.
+See [register map and measurement method](docs/bayer_rgb_detection.md), [verification results](docs/test_results.md), and [hardware bring-up log](docs/hardware_bringup_2026-10-21.md).
 
-## Hardware and software facts to verify first
+## Build and test
 
-1. Record the board revision, exact FPGA part, Vivado and Vitis versions, installed board files, OS, cable/camera module markings, and power source. Do not assume an OV5647 clone has the same oscillator and power-down circuit as the official Pi module.
-2. Check the camera connector orientation, pin mapping, 3.3 V supply, I2C pull-ups, GPIO reset/power-down, and whether the camera module supplies its own XCLK oscillator. Find the exact module schematic if possible. Never drive an unknown GPIO or apply an external clock until its circuit is known.
-3. In the installed Vivado, check CSI-2 RX IP availability, license status, two-lane RAW10 support, device support, implementation results, and bitstream generation. Licensing statements vary by IP and version; the installed tool result is authoritative.
-4. The board manual reports the Pcam link was tested to **672 Mb/s per lane**. Keep the selected sensor mode and programmed link rate within that board-validated ceiling. Do not infer the lane rate from active pixel payload alone; use the sensor PLL/configuration and verify with the receiver status.
-5. Start at **640x480 RAW10**, using a proven OV5647 mode and a modest frame rate. The upstream Linux OV5647 driver documents a VGA RAW10 mode and link-frequency settings, but its tables still need adaptation and verification for this camera module. Treat 720p/1080p as stretch targets after measured closure.
-6. Start with a known frame in DDR so HDMI timing and a monitor/capture input can be checked independently of camera bring-up.
-
-## Work packages and acceptance gates
-
-| Stage | Implementation | Evidence required |
-| --- | --- | --- |
-| 0. Inventory | Inspect local Vivado/Vitis, board, sensor, port wiring, IP catalog, license and published sources. | `docs/hardware_inventory.md`, photos/labels where available, explicit go/no-go for CSI RX on XC7Z010. |
-| 1. HDMI display | Add DDR readback, VGA video timing and HDMI TX; use a known frame for independent display bring-up. | Block design validation, bitstream, timing/DRC, visible test frame on an external monitor or USB capture. |
-| 2. RTL core | Write parameterized AXI4-Stream frame checker with frame/line/pixel counters, malformed-frame and stall counters, optional simple edge or ROI activity score. Define AXI-Lite register map or simpler exposed status interface. | Self-checking simulations for SOF/EOL, reset, backpressure, truncated/oversize frames and metric math; synthesis/utilization report. |
-| 3. FPGA integration | Tcl-built Vivado project for exact Z7-10 part; PS DDR/UART/IIC, custom RTL, VDMA read/write and HDMI output. | Clean project recreation, address map, bitstream, utilization and timing reports. |
-| 4. Sensor bring-up | Confirm clock/power-down, read OV5647 chip ID over I2C, apply documented RAW10 mode, confirm D-PHY/CSI lock and nonzero valid frame count. | UART register dump, receiver status, frame-size statistics, recovered sample frame. |
-| 5. Live display | PS firmware initializes camera and both VDMA channels, manages frame buffers, and starts video timing. | Live monitor/capture image or Ethernet viewer screenshot, FPS and error counters over 5 minutes, end-to-end latency method and result. |
-| 6. Portfolio | Architecture diagram, design choices, test summary, timing/utilization, measured lane and network bandwidth, limitations, 60–90 second demo, resume bullets. | Reproducible build/run instructions and honest result table with tested vs planned items. |
-
-Implement stages in order. A later stage may remain blocked by physical access or IP constraints while earlier simulated work still has value. Preserve the distinction between simulation, synthesis, and actual on-board validation.
-
-## Performance and memory budget
-
-- Active VGA RAW10 payload: `640 × 480 × 10 × 30 = 92.16 Mb/s` at 30 fps; `184.32 Mb/s` at 60 fps, before CSI-2 overhead/blanking.
-- Unpacked 8-bit VGA frames: `307,200 bytes/frame`, or `9.216 MB/s` at 30 fps. Two or three DDR buffers are enough for initial decoupling, subject to DMA stride/alignment.
-- The initial HDMI path expands unpacked 8-bit Bayer samples to grayscale RGB888. It discards two low RAW10 bits. Retain 10-bit capture and add demosaicing when feasible; identify the Bayer order and any loss in the portfolio.
-- For optional Ethernet diagnostics, use MTU-safe UDP chunks, frame/chunk IDs, sequence checking, a completion timeout, and a drop-oldest policy. Report complete frames only.
-- A 5MP full-frame mode is outside the first milestone. Do not label a VGA implementation as 5MP streaming merely because the sensor has 5MP pixels.
-
-## Suggested repository layout
-
-```text
-zybo-ov5647-high-speed-vision/
-  README.md
-  CODEX_BUILD_PROMPT.md
-  artifacts/zybo_camera_system.bit
-  artifacts/zybo_camera_system.xsa
-  docs/architecture.md
-  docs/hardware_inventory.md
-  docs/register_map.md
-  docs/test_results.md
-  rtl/axis_frame_monitor.sv
-  rtl/axis_raw10_to_bayer8.sv
-  rtl/axis_vision_pipeline.v
-  rtl/axis_gray_to_rgb.v
-  sim/tb_axis_frame_monitor.sv
-  sim/tb_axis_vision_pipeline.v
-  fpga/build.tcl
-  fpga/build_system.tcl
-  fpga/export_xsa.tcl
-  fpga/pcam_system.xdc
-  fpga/hdmi_out.xdc
-  fpga/ip_repo/                 # Digilent rgb2dvi + TMDS, licensed source
-  fpga/board_files/zybo-z7-10/A.0/...
-  firmware/zcam_protocol.c
-  firmware/zcam_protocol.h
-  firmware/hdmi_smoke.c
-  firmware/...
-  host/viewer.py
-  host/protocol.py
-  host/demo_sender.py
-  host/test_protocol.py
-```
-
-## Run the delivered parts
+Run in PowerShell from the repository root:
 
 ```powershell
-cd 'path\to\zybo-ov5647-high-speed-vision'
 python -m unittest discover -s host -p 'test_*.py' -v
-$env:XILINX_LOCAL_USER_DATA='NO'
-& 'C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat' -mode batch -nojournal -nolog -source 'fpga\build.tcl'
-& 'C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat' -mode batch -nojournal -nolog -source 'fpga\build_system.tcl'
-& 'C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat' -mode batch -nojournal -nolog -source 'fpga\export_xsa.tcl'
+
+$sim = Join-Path (Get-Location) 'build\sim_bayer'
+New-Item -ItemType Directory -Force $sim | Out-Null
+Push-Location $sim
+& 'C:\AMDDesignTools\2025.2\Vivado\bin\xvlog.bat' -sv `
+  ..\..\rtl\axis_bayer_demosaic.v `
+  ..\..\rtl\axis_bright_roi_detector.v `
+  ..\..\sim\tb_axis_bayer_vision.sv
+& 'C:\AMDDesignTools\2025.2\Vivado\bin\xelab.bat' tb_axis_bayer_vision -s tb_axis_bayer_vision
+& 'C:\AMDDesignTools\2025.2\Vivado\bin\xsim.bat' tb_axis_bayer_vision -runall
+Pop-Location
 ```
 
-For the HDMI display smoke test, follow `docs/bringup.md` to build `firmware/hdmi_smoke.c` as a Vitis standalone application, program the `.bit`, run the ELF, and view Zybo HDMI OUT on an external monitor or USB HDMI capture device. For local UDP viewer testing, install `host/requirements.txt` and run `python host/viewer.py`, then `python host/demo_sender.py` in another terminal. That synthetic test does not require the Zybo. Correct Bayer ordering for the physical sensor remains to be established.
+The full design build and XSA export are `fpga/build_system.tcl` and `fpga/export_xsa.tcl`. The generated deliverables are copied to `artifacts/`. Review [routed timing and utilization](docs/system_routed_timing.txt) and [DRC](docs/system_drc.txt) after a rebuild. The build uses Vivado 2025.2 and the local Digilent `rgb2dvi` IP under `fpga/ip_repo`.
 
-## Sources and limits
+## Board setup
 
-- [Digilent Zybo Z7 reference manual](https://digilent.com/reference/_media/reference/programmable-logic/zybo-z7/zybo-z7_rm.pdf): exact board part, Pcam pinout, 672 Mb/s/lane validated speed, HDMI TX/RX, Z7-10 resource limits.
-- [AMD MIPI CSI-2 Receiver product guide](https://docs.amd.com/r/5.3-English/pg232-mipi-csi2-rx/Configuration-Tab): receiver format, lanes, and device-dependent configuration. Match the guide to the installed IP version.
-- [Linux OV5647 sensor driver](https://github.com/torvalds/linux/blob/master/drivers/media/i2c/ov5647.c): reference sensor modes and register sequencing. Verify compatibility and observe its license before reusing code.
-- [Digilent Z7-20 Pcam 5C demo](https://github.com/Digilent/Zybo-Z7-20-pcam-5c): architectural reference only; it targets a larger board and an OV5640 sensor, so it is not a drop-in Z7-10/OV5647 project.
-- [Digilent Z7-10 HDMI demo](https://github.com/Digilent/Zybo-Z7-10-HDMI): reference for the board's HDMI TX path.
+Connect the camera's 15-pin ribbon to the Zybo Pcam connector with the board powered off, and connect Zybo **HDMI OUT** to a monitor or capture device. USB JTAG is used for configuration and the frame dump. The HDMI path is started through volatile JTAG register writes; there is no boot firmware that autonomously configures the camera yet. The Ethernet cable is not used by this milestone, and Ethernet video streaming is not implemented.
 
-The linked job postings were not readable through the available web fetch during planning. The portfolio alignment above is based on [BOS's ADAS/automotive products](https://www.bos-semi.com/product) and [RANIX's V2X/automotive focus](https://ranix.co.kr/en-CEO), rather than a claim about the postings' exact requirements.
+Useful scripts:
 
+- `fpga/enable_camera_power_jtag.tcl` enables the Pcam power GPIO.
+- `fpga/configure_ov5647_vga_jtag.tcl` configures the tested VGA RAW10 color-bar mode.
+- `fpga/start_camera_hdmi_jtag.tcl` starts VDMA capture and HDMI playback.
+- `fpga/check_camera_hdmi_jtag.tcl` checks fresh CSI/VDMA status.
+- `fpga/capture_vga_probe_jtag.tcl` captures then stops S2MM; `fpga/dump_vga_frame_jtag.tcl` saves the Bayer8 frame under ignored `build/capture/`.
+- `host/bayer8_to_rgb.py` converts a raw dump to RGB PNG, for example:
 
+  ```powershell
+  python host\bayer8_to_rgb.py build\capture\ov5647_colorbars_640x480.raw docs\captures\frame.png --phase BG
+  ```
+
+The HDMI output was started but still needs visual confirmation on an external display. A laptop HDMI connector is commonly output-only; a USB HDMI capture device is required to view Zybo HDMI on such a laptop.
+
+## Portfolio framing
+
+This demonstrates MIPI CSI-2 camera bring-up, AXI4-Stream processing, line-buffered RTL, frame-level measurement, DDR/VDMA integration, HDMI output integration, simulation, and timing closure on a resource-constrained Zynq-7000 device. It is a camera-interface/vision subsystem example relevant to automotive camera and ADAS interface roles. Do not describe the detector as a validated automotive perception function; it is a threshold-and-bounding-box demonstration.
