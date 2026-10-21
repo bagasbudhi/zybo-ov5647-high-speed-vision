@@ -68,7 +68,7 @@ The full design build and XSA export are `fpga/build_system.tcl` and `fpga/expor
 
 ## Board setup
 
-Connect the camera's 15-pin ribbon to the Zybo Pcam connector with the board powered off, and connect Zybo **HDMI OUT** to a monitor or capture device. USB JTAG is used for configuration and the frame dump. The HDMI path is started through volatile JTAG register writes; there is no boot firmware that autonomously configures the camera yet. The Ethernet cable is not used by this milestone, and Ethernet video streaming is not implemented.
+Connect the camera's 15-pin ribbon to the Zybo Pcam connector with the board powered off. HDMI OUT can connect to a TV/monitor; it is not required for laptop viewing over Ethernet. USB JTAG is used for configuration and to start the Ethernet sender. The FPGA configuration is volatile and the sender is started using the scripts below; the board does not boot this application autonomously.
 
 Useful scripts:
 
@@ -93,6 +93,10 @@ The repository also includes a small 16-8-1 quantized MLP. The laptop reference 
 ## Indoor object detector (laptop-side)
 
 An actual indoor object detector is included separately from that synthetic RTL experiment. `host/indoor_detector.py` fine-tunes YOLO11n on the public HomeObjects-3K dataset for bed, sofa, chair, table, lamp, TV, laptop, wardrobe, window, door, potted plant, and photo frame. It accepts images, videos, a laptop webcam, or an OV5647 Bayer8 frame dump, and saves annotated detections plus a CSV of confidence and bounding boxes. Neural inference runs on the laptop; it is not in the FPGA bitstream. See [indoor object detection setup, training, and limits](docs/indoor_object_detection.md).
+
+## Live Ethernet to laptop YOLO
+
+`host/zybo_live_detect.py` listens for Bayer8 frames from Zybo UDP port 5005, reassembles packets, demosaics each frame, and runs the trained YOLO model live on the laptop. `fpga/start_ethernet_stream_jtag.tcl` configures the camera and starts the Zynq sender. Follow the [live Ethernet detection instructions](docs/live_ethernet_detection.md). The laptop receiver has passed a loopback packet test; the current physical board session still has an ARM/DAP JTAG access error, so camera-to-Ethernet streaming has not yet been demonstrated live.
 
 ## Portfolio framing
 
