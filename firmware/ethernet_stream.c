@@ -54,6 +54,18 @@ static void configure_rgmii_delay(void)
     phy_write(31, old_page);
 }
 
+static void configure_gigabit_mac(void)
+{
+    /* This direct link negotiates 1000 Mb/s, but the Vitis 2025.2 lwIP
+     * startup leaves GEM0 in 10/100 mode (net_cfg.gige_en = 0). In that
+     * state GEM TX counters advance while no frames reach the laptop. */
+    const uint32_t reg = XPAR_XEMACPS_0_BASEADDR + 0x04u;
+    const uint32_t before = Xil_In32(reg);
+    Xil_Out32(reg, before | (1u << 10));
+    xil_printf("GEM_NET_CFG=%08x->%08x (1000Mb/s)\r\n",
+               before, Xil_In32(reg));
+}
+
 static int send_datagram(const uint8_t *data, size_t size, void *unused)
 {
     struct pbuf *p;
@@ -113,6 +125,7 @@ int main(void)
     netif_set_up(&ethernet);
     Xil_ExceptionEnableMask(XIL_EXCEPTION_IRQ);
     configure_rgmii_delay();
+    configure_gigabit_mac();
     sender = udp_new();
     if (!sender) return 2;
     sender->so_options |= SOF_BROADCAST;

@@ -68,5 +68,20 @@ mwr 0x43000064 0x11100000
 mwr 0x43000058 640
 mwr 0x43000054 640
 mwr 0x43000050 480
+after 1000
+# S2MM can latch a transient SOF/EOL error when it starts in the middle of
+# a live sensor frame. PG020 recommends clearing those W1C status bits; the
+# next complete frame then advances the write frame store pointer.
+mwr 0x43000034 0x0000F990
+after 3000
+# The first clear can land while the camera is still settling. Clear any
+# latched startup error once more before judging capture health.
+mwr 0x43000034 0x0000F990
+after 1000
+set s2mm_status [mrd -value 0x43000034]
+puts [format "S2MM_STATUS_AFTER_CLEAR=0x%08X" $s2mm_status]
+if {$s2mm_status & 0x0000F991} {
+    puts "WARNING: S2MM has a startup error; run fpga/clear_s2mm_startup_error_jtag.tcl after the sensor settles"
+}
 puts "ZCAM_ETHERNET_SENDER_RUNNING board_ip=169.254.80.26 udp_port=5005"
 disconnect

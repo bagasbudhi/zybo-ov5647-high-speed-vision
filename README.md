@@ -96,7 +96,7 @@ An actual indoor object detector is included separately from that synthetic RTL 
 
 ## Live Ethernet to laptop YOLO
 
-`host/zybo_live_detect.py` listens for Bayer8 frames from Zybo UDP port 5005, reassembles packets, demosaics each frame, and runs the trained YOLO model live on the laptop. `fpga/start_ethernet_stream_jtag.tcl` configures the camera and starts the Zynq sender. Follow the [live Ethernet detection instructions](docs/live_ethernet_detection.md). The laptop receiver passed a loopback packet test; the physical Zybo now captures and sends frames, but Windows Firewall currently blocks the incoming UDP stream, so laptop display still needs an approved port rule.
+`host/zybo_live_detect.py` receives Bayer8 frames from Zybo UDP port 5005, demosaics each frame, and runs the trained YOLO model on the laptop. `fpga/start_ethernet_stream_jtag.tcl` configures the camera and starts the Zynq sender. A physical OV5647-to-laptop run reconstructed 45 frames from 9,901 packets in 10 seconds with zero dropped or bad frames; the end-to-end viewer averaged 4.43 FPS including model warm-up. Its boxes show class and confidence, with some visible false positives. See the [live-stream instructions, measured evidence, and camera image](docs/live_ethernet_detection.md). Ethernet works without HDMI attached to the laptop.
 
 ## Portfolio framing
 

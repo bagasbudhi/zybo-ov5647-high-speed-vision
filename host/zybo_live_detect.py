@@ -20,6 +20,8 @@ def main():
     parser.add_argument("--port", type=int, default=5005)
     parser.add_argument("--model", default="runs/indoor/homeobjects3k_yolo11n_320/weights/best.pt")
     parser.add_argument("--phase", choices=("BG", "GB", "GR", "RG"), default="BG")
+    parser.add_argument("--demosaic", choices=("opencv", "reference"), default="opencv",
+                        help="fast OpenCV Bayer conversion or exact RTL reference conversion")
     parser.add_argument("--confidence", type=float, default=0.25)
     parser.add_argument("--seconds", type=float, default=0, help="stop after N seconds (0 runs until q/Ctrl-C)")
     parser.add_argument("--save-dir", type=Path, default=Path("build/zybo_live"))
@@ -59,8 +61,16 @@ def main():
                 if complete is None:
                     continue
                 frame_id, width, height, timestamp_ns, raw = complete
-                bgr = cv2.cvtColor(np.frombuffer(demosaic(raw, width, height, args.phase), dtype=np.uint8)
-                                   .reshape(height, width, 3), cv2.COLOR_RGB2BGR)
+                if args.demosaic == "reference":
+                    bgr = cv2.cvtColor(np.frombuffer(demosaic(raw, width, height, args.phase), dtype=np.uint8)
+                                       .reshape(height, width, 3), cv2.COLOR_RGB2BGR)
+                else:
+                    # OpenCV's Bayer *2RGB constants give BGR channel order for
+                    # the top-left CFA phase names used by this project.
+                    bayer_codes = {"BG": cv2.COLOR_BayerBG2RGB, "GB": cv2.COLOR_BayerGB2RGB,
+                                   "GR": cv2.COLOR_BayerGR2RGB, "RG": cv2.COLOR_BayerRG2RGB}
+                    bgr = cv2.cvtColor(np.frombuffer(raw, dtype=np.uint8).reshape(height, width),
+                                       bayer_codes[args.phase])
                 t0 = time.perf_counter()
                 result = model.predict(bgr, imgsz=320, conf=args.confidence, verbose=False)[0]
                 infer_ms = (time.perf_counter() - t0) * 1000.0
