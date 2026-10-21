@@ -90,6 +90,10 @@ The owner confirmed the earlier color-bar output on a TV connected to Zybo HDMI 
 
 The repository also includes a small 16-8-1 quantized MLP. The laptop reference scans 24x24 windows over a captured Bayer8 frame; standalone SystemVerilog classifies pooled 4x4 grayscale patches. Synthesis-only cost on the XC7Z010 is 424 LUTs and 298 registers, with 0 DSP and 0 BRAM. The sample model was trained only on generated bright-rectangle patches. A deterministic synthetic holdout test scored 497/500 positive patches and 500/500 negative patches at score threshold 0.88. This is a learning and RTL-inference experiment, not a trained automotive object detector. The MLP is not connected to the camera/HDMI FPGA block design, and its metrics are synthetic, not camera accuracy. See [neural detector notes](docs/neural_detector.md).
 
+## Indoor object detector (laptop-side)
+
+An actual indoor object detector is included separately from that synthetic RTL experiment. `host/indoor_detector.py` fine-tunes YOLO11n on the public HomeObjects-3K dataset for bed, sofa, chair, table, lamp, TV, laptop, wardrobe, window, door, potted plant, and photo frame. It accepts images, videos, a laptop webcam, or an OV5647 Bayer8 frame dump, and saves annotated detections plus a CSV of confidence and bounding boxes. Neural inference runs on the laptop; it is not in the FPGA bitstream. See [indoor object detection setup, training, and limits](docs/indoor_object_detection.md).
+
 ## Portfolio framing
 
-This demonstrates MIPI CSI-2 camera bring-up, AXI4-Stream processing, line-buffered RTL, frame-level measurement, DDR/VDMA integration, HDMI output integration, simulation, and timing closure on a resource-constrained Zynq-7000 device. It is a camera-interface/vision subsystem example relevant to automotive camera and ADAS interface roles. Do not describe the detector as a validated automotive perception function; it is a threshold-and-bounding-box demonstration.
+This demonstrates MIPI CSI-2 camera bring-up, AXI4-Stream processing, line-buffered RTL, frame-level measurement, DDR/VDMA integration, HDMI output integration, simulation, and timing closure on a resource-constrained Zynq-7000 device. The FPGA detector is a measurable brightness-threshold block; the separate YOLO indoor model runs on the laptop. Neither detector is a validated automotive perception function.

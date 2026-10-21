@@ -1,0 +1,2 @@
+# Laptop-side neural object detector (does not change the Vivado/FPGA build).
+ultralytics>=8.3,<9

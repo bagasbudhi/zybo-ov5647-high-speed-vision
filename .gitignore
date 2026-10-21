@@ -1,4 +1,7 @@
 build/
+runs/
+*.pt
+bus.jpg
 vendor/
 .gen/
 .srcs/
