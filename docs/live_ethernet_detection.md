@@ -56,7 +56,15 @@ After the camera stream recovered, a second 10-second run captured **45 complete
 
 ![Live OV5647 Ethernet frame with a lamp prediction](images/live_ov5647_lamp_detection.jpg)
 
-This is one visually plausible prediction, not a measured detection accuracy. The box covers the bright part of the lamp rather than the whole fixture. Table and chair labels also appeared during the run, but visual inspection did not establish that those boxes correctly identify the user's desk and chair. The annotated JPEG is published; the per-box CSV and other room frames remain local.
+This is one visually plausible prediction, not a measured detection accuracy. The box covers the bright part of the lamp rather than the whole fixture.
+
+The same run also produced the following `table 0.65` and `chair 0.36` predictions. These are examples of the model's output, **not verified detections of the user's table or chair**: the boxes are ambiguous and may be false positives.
+
+![Live OV5647 frame with unverified table prediction](images/live_ov5647_table_prediction_unverified.jpg)
+
+![Live OV5647 frame with unverified chair prediction](images/live_ov5647_chair_prediction_unverified.jpg)
+
+These three annotated JPEGs are published; the per-box CSV and other room frames remain local.
 
 ## Camera-link interruption and recovery, 21 October 2026
 
