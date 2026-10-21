@@ -48,10 +48,18 @@ This is a frame from that physical Ethernet run, with a `table 0.66` prediction 
 
 ![Live OV5647 Ethernet frame with labeled table detection](images/live_ov5647_table_detection.jpg)
 
-The local `build\zybo_live\fast_test\detections.csv` has frame IDs, class labels, confidence, and box coordinates. It stays on the laptop. Other live predictions included chair, sofa, and lamp, but visual review found false positives. No visually verified desk-and-lamp detection picture has been published. The screenshot and counts do not establish real-world detection accuracy. The private board photos with hardware identifiers are not published.
+The local `build\zybo_live\fast_test\detections.csv` has frame IDs, class labels, confidence, and box coordinates. It stays on the laptop. Other live predictions included chair, sofa, and lamp, but visual review found false positives. No visually verified desk detection picture has been published. The screenshot and counts do not establish real-world detection accuracy. The private board photos with hardware identifiers are not published.
+
+## Later lamp example, 21 October 2026
+
+After the camera stream recovered, a second 10-second run captured **45 complete frames from 9,901 UDP packets**, with **zero dropped frames and zero bad packets**. The laptop model emitted 44 boxes across those frames. One frame has a `lamp 0.31` box over a visibly illuminated lamp head:
+
+![Live OV5647 Ethernet frame with a lamp prediction](images/live_ov5647_lamp_detection.jpg)
+
+This is one visually plausible prediction, not a measured detection accuracy. The box covers the bright part of the lamp rather than the whole fixture. Table and chair labels also appeared during the run, but visual inspection did not establish that those boxes correctly identify the user's desk and chair. The annotated JPEG is published; the per-box CSV and other room frames remain local.
 
 ## Camera-link interruption and recovery, 21 October 2026
 
 During a later attempt to capture the desk and lamp, Ethernet link and ping worked, and I²C read the OV5647 ID `0x5647`. The CSI-2 receiver counted **zero image packets** with both live output and the sensor's test-pattern mode. VDMA S2MM reported `0x00010000`, while HDMI MM2S reported `0x00011000`; neither status showed a fresh transfer error. The receiver got zero UDP packets because no new camera frame reached DDR. The TV image appeared glitchy in this state; its appearance has not been captured or analyzed.
 
-After the board was powered on again, the JTAG startup script restored live sensor mode. The CSI packet counter advanced, S2MM and MM2S reported `0x00011000`, and a 10-second laptop run reconstructed **45 complete frames from 9,901 UDP packets**, with **zero dropped frames and zero bad packets**. The camera was then pointed at a mostly featureless surface, so the model reported no objects in those frames. This verifies the recovered camera-to-Ethernet path, but it does not verify desk/lamp detection or explain the TV artifact. A new TV photo and a camera view of the desk and lamp are needed to diagnose the display and publish a representative detection image.
+After the board was powered on again, the JTAG startup script restored live sensor mode. The CSI packet counter advanced, S2MM and MM2S reported `0x00011000`, and a 10-second laptop run reconstructed **45 complete frames from 9,901 UDP packets**, with **zero dropped frames and zero bad packets**. The camera was then pointed at a mostly featureless surface, so the model reported no objects in those frames. This verifies the recovered camera-to-Ethernet path, but it does not explain the TV artifact. The later lamp example above was captured after the camera was aimed into the room. A new TV photo is still needed to diagnose the display.
